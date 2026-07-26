@@ -98,7 +98,7 @@ export default function Cart() {
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="p-6 pt-0 flex flex-col gap-4">
+            <CardFooter className="px-6 pt-2 pb-6 flex flex-col gap-2">
               <Button size="lg" className="w-full text-base" asChild>
                 <Link to="/checkout">
                   Proceed to Checkout <ArrowRight className="ml-2 h-4 w-4" />

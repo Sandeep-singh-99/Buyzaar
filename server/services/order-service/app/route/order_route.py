@@ -151,26 +151,26 @@ async def create_order(
             )
 
         # Extract real price from product service
-        sales_price = Decimal(str(product.get("sales_price") or product.get("product_price", 0)))
+        sales_price = Decimal(str(product.get("sales_price") or product.get("price") or product.get("product_price") or 0))
         if sales_price <= 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid pricing for product '{product.get('product_name')}'"
+                detail=f"Invalid pricing for product '{product.get('name') or product.get('product_name', 'Unknown Product')}'"
             )
 
         # Extract primary image URL if available
         product_image = None
         images = product.get("images", [])
         if images:
-            primary_img = next((img.get("image_url") for img in images if img.get("is_primary")), None)
-            product_image = primary_img or images[0].get("image_url")
+            primary_img = next((img.get("url") or img.get("image_url") for img in images if img.get("is_primary")), None)
+            product_image = primary_img or images[0].get("url") or images[0].get("image_url")
 
         subtotal = sales_price * item.quantity
         total_amount += subtotal
 
         validated_items.append({
             "product_id": item.product_id,
-            "product_name": product.get("product_name", "Unknown Product"),
+            "product_name": product.get("name") or product.get("product_name") or "Unknown Product",
             "product_image": product_image,
             "price": sales_price,
             "quantity": item.quantity,

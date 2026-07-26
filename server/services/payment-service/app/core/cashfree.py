@@ -58,7 +58,13 @@ class CashfreeClient:
             if response.status_code in (200, 201):
                 data = response.json()
                 payment_session_id = data.get("payment_session_id") or f"session_{order_id}"
-                payment_link = data.get("payment_link") or f"https://sandbox.cashfree.com/pg/orders/{payment_session_id}"
+                
+                if "sandbox" in CASHFREE_BASE_URL.lower():
+                    checkout_base_url = "https://payments-test.cashfree.com/order"
+                else:
+                    checkout_base_url = "https://payments.cashfree.com/order"
+                
+                payment_link = data.get("payment_link") or f"{checkout_base_url}/#{payment_session_id}"
                 cf_order_id = str(data.get("cf_order_id", order_id))
 
                 return {
@@ -76,7 +82,13 @@ class CashfreeClient:
                 if get_response.status_code == 200:
                     get_data = get_response.json()
                     payment_session_id = get_data.get("payment_session_id") or f"session_{order_id}"
-                    payment_link = get_data.get("payment_link") or f"https://sandbox.cashfree.com/pg/orders/{payment_session_id}"
+                    
+                    if "sandbox" in CASHFREE_BASE_URL.lower():
+                        checkout_base_url = "https://payments-test.cashfree.com/order"
+                    else:
+                        checkout_base_url = "https://payments.cashfree.com/order"
+                        
+                    payment_link = get_data.get("payment_link") or f"{checkout_base_url}/#{payment_session_id}"
                     cf_order_id = str(get_data.get("cf_order_id", order_id))
                     
                     return {
@@ -98,10 +110,15 @@ class CashfreeClient:
 
         # Fallback for sandbox/testing when using mock credentials
         mock_session_id = f"session_{order_id}_{int(time.time())}"
+        if "sandbox" in CASHFREE_BASE_URL.lower():
+            checkout_base_url = "https://payments-test.cashfree.com/order"
+        else:
+            checkout_base_url = "https://payments.cashfree.com/order"
+
         return {
             "payment_session_id": mock_session_id,
             "cf_order_id": f"cf_{order_id}",
-            "payment_link": f"https://payments-sandbox.cashfree.com/order/#${mock_session_id}",
+            "payment_link": f"{checkout_base_url}/#{mock_session_id}",
             "order_status": "ACTIVE",
         }
 

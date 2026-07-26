@@ -27,7 +27,7 @@ class Order(Base):
     # Use Numeric(precision, scale) for exact financial math
     total_amount = Column(Numeric(10, 2), nullable=False)
 
-    payment_status = Column(Enum(PaymentStatus), default=PaymentStatus.PENDING)
+    payment_status = Column(Enum(PaymentStatus, native_enum=False), default=PaymentStatus.PENDING)
     status = Column(String, default="pending", nullable=False)
 
     shipping_name = Column(String)

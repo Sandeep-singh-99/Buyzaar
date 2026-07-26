@@ -60,12 +60,25 @@ export const useCheckout = () => {
     },
     onSuccess: (data: IOrderCreateResponse) => {
       toast.dismiss("checkout-toast");
-      toast.success("Order created! Redirecting to Cashfree Payment Gateway...");
+      
+      const paymentSessionId = data.payment_session_id;
+      const paymentMode = data.payment_mode || "sandbox";
 
-      const paymentLink = data.payment_link;
-      if (paymentLink) {
-        // Redirect user to Cashfree Hosted Payment Page
-        window.location.href = paymentLink;
+      if (paymentSessionId) {
+        toast.success("Order created! Opening Cashfree Payment Gateway...");
+        try {
+          const cashfree = (window as any).Cashfree({
+            mode: paymentMode,
+          });
+          
+          cashfree.checkout({
+            paymentSessionId: paymentSessionId,
+            redirectTarget: "_self",
+          });
+        } catch (error) {
+          console.error("Cashfree SDK initialization/checkout error:", error);
+          toast.error("Failed to initialize Cashfree Payment Gateway. Please try again.");
+        }
       } else {
         toast.error("Payment session could not be established. Please try again.");
       }
@@ -99,9 +112,27 @@ export const useCreatePayment = () => {
     },
     onSuccess: (data: IPaymentResponse) => {
       toast.dismiss("payment-toast");
-      toast.success("Payment session created! Redirecting...");
-      if (data.payment_link) {
-        window.location.href = data.payment_link;
+      
+      const paymentSessionId = data.payment_session_id;
+      const paymentMode = data.payment_mode || "sandbox";
+
+      if (paymentSessionId) {
+        toast.success("Payment session created! Opening Cashfree Payment Gateway...");
+        try {
+          const cashfree = (window as any).Cashfree({
+            mode: paymentMode,
+          });
+          
+          cashfree.checkout({
+            paymentSessionId: paymentSessionId,
+            redirectTarget: "_self",
+          });
+        } catch (error) {
+          console.error("Cashfree SDK initialization/checkout error:", error);
+          toast.error("Failed to initialize Cashfree Payment Gateway. Please try again.");
+        }
+      } else {
+        toast.error("Payment session could not be established.");
       }
     },
     onError: (error: AxiosError<ApiErrorResponse>) => {

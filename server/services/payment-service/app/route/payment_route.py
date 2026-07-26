@@ -8,6 +8,7 @@ from app.model.payment import Payment, PaymentStatus
 from app.schema.payment import PaymentCreate, PaymentOut, CreatePaymentResponse, PaymentHistoryResponse
 from app.core.cashfree import CashfreeClient
 from app.core.http_client import ServiceHTTPClient
+from app.core.config import CASHFREE_BASE_URL
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +75,7 @@ async def create_payment(
     return CreatePaymentResponse(
         payment_session_id=session_id,
         payment_link=payment_link,
+        payment_mode="sandbox" if "sandbox" in CASHFREE_BASE_URL.lower() else "production",
         order_id=order_id,
         transaction_id=transaction_id,
         status=payment_record.status,

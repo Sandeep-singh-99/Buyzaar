@@ -35,7 +35,8 @@ class PaymentOut(BaseModel):
 
 class CreatePaymentResponse(BaseModel):
     payment_session_id: str
-    payment_link: str
+    payment_link: Optional[str] = None
+    payment_mode: str
     order_id: str
     transaction_id: Optional[str] = None
     status: PaymentStatus

@@ -4,6 +4,9 @@ Buyzaar is an enterprise-grade, high-performance, and highly scalable **distribu
 
 The platform utilizes an **Nginx API Gateway** as a single entry point for routing, **Redis** for distributed high-speed caching (Cache-Aside pattern), and **Neon Serverless PostgreSQL** for database persistence across all services. The client-side is a feature-rich, modern Single Page Application (SPA) built using React 19, Vite, Tailwind CSS v4, and Shadcn UI.
 
+![E-Commerce Microservices](./screenshot/image.png)
+![E-Commerce Microservices](./screenshot/Screenshot%202026-07-26%20142319.png)
+![E-Commerce Microservices](./screenshot/Screenshot%202026-07-26%20142429.png)
 ---
 
 ## 📋 Table of Contents

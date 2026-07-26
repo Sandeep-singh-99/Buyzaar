@@ -25,7 +25,7 @@ class PaymentOut(BaseModel):
     amount: float
     provider: str
     transaction_id: Optional[str] = None
-    payment_link: Optional[str] = None
+    payment_session_id: Optional[str] = None
     status: PaymentStatus
     created_at: datetime
 
@@ -35,7 +35,6 @@ class PaymentOut(BaseModel):
 
 class CreatePaymentResponse(BaseModel):
     payment_session_id: str
-    payment_link: Optional[str] = None
     payment_mode: str
     order_id: str
     transaction_id: Optional[str] = None

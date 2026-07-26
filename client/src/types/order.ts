@@ -46,7 +46,6 @@ export interface IOrderCreateResponse {
   message: string;
   order: IOrderResponse;
   payment_session_id?: string;
-  payment_link?: string;
   payment_mode?: string;
 }
 
@@ -61,7 +60,6 @@ export interface IPaymentCreatePayload {
 
 export interface IPaymentResponse {
   payment_session_id: string;
-  payment_link?: string;
   payment_mode?: string;
   order_id: string;
   transaction_id?: string;

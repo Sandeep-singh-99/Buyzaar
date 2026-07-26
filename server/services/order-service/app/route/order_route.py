@@ -129,14 +129,12 @@ async def create_order(
             
             payment_response = await ServiceHTTPClient.create_payment_order(payment_payload)
             payment_session_id = payment_response.get("payment_session_id")
-            payment_link = payment_response.get("payment_link")
             payment_mode = payment_response.get("payment_mode")
             
             return OrderCreateResponse(
                 message="Checkout resumed for existing pending order",
                 order=recent_order,
                 payment_session_id=payment_session_id,
-                payment_link=payment_link,
                 payment_mode=payment_mode
             )
 
@@ -245,14 +243,12 @@ async def create_order(
     payment_response = await ServiceHTTPClient.create_payment_order(payment_payload)
 
     payment_session_id = payment_response.get("payment_session_id")
-    payment_link = payment_response.get("payment_link")
     payment_mode = payment_response.get("payment_mode")
 
     return OrderCreateResponse(
         message="Order created successfully",
         order=new_order,
         payment_session_id=payment_session_id,
-        payment_link=payment_link,
         payment_mode=payment_mode
     )
 

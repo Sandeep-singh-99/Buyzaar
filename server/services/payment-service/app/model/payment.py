@@ -20,6 +20,6 @@ class Payment(Base):
     amount = Column(Numeric(10, 2), nullable=False)
     provider = Column(String, default="cashfree", nullable=False)
     transaction_id = Column(String, unique=True, nullable=True)
-    payment_link = Column(String, nullable=True)
+    payment_session_id = Column(String, nullable=True)
     status = Column(SQLEnum(PaymentStatus), default=PaymentStatus.PENDING, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

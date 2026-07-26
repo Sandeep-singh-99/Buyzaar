@@ -69,7 +69,6 @@ class CashfreeClient:
                 return {
                     "payment_session_id": payment_session_id,
                     "cf_order_id": cf_order_id,
-                    "payment_link": data.get("payment_link"),
                     "order_status": data.get("order_status", "ACTIVE"),
                 }
             elif response.status_code == 409:
@@ -91,7 +90,6 @@ class CashfreeClient:
                     return {
                         "payment_session_id": payment_session_id,
                         "cf_order_id": cf_order_id,
-                        "payment_link": get_data.get("payment_link"),
                         "order_status": get_data.get("order_status", "ACTIVE"),
                     }
                 else:
@@ -112,6 +110,29 @@ class CashfreeClient:
                 status_code=500,
                 detail=f"Internal Cashfree integration error: {str(e)}"
             )
+
+    @staticmethod
+    async def get_order(order_id: str) -> Dict[str, Any]:
+        url = f"{CASHFREE_BASE_URL}/orders/{order_id}"
+        headers = {
+            "x-client-id": CASHFREE_APP_ID,
+            "x-client-secret": CASHFREE_SECRET_KEY,
+            "x-api-version": CASHFREE_API_VERSION,
+            "Content-Type": "application/json",
+        }
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(url, headers=headers)
+            if response.status_code == 200:
+                return response.json()
+            else:
+                logger.warning(f"[Cashfree] GET order status {response.status_code}: {response.text}")
+                raise HTTPException(status_code=response.status_code, detail=f"Cashfree error: {response.text}")
+        except HTTPException as he:
+            raise he
+        except Exception as e:
+            logger.error(f"[Cashfree] GET order API call exception: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
 
     @staticmethod
     def verify_signature(raw_body: str, timestamp: str, signature: str) -> bool:

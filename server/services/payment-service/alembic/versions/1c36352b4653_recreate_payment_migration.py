@@ -1,8 +1,8 @@
-"""create payment table
+"""recreate payment migration
 
-Revision ID: 063394831895
+Revision ID: 1c36352b4653
 Revises: 
-Create Date: 2026-07-22 20:26:27.574173
+Create Date: 2026-07-26 13:17:23.065547
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '063394831895'
+revision: str = '1c36352b4653'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -28,7 +28,7 @@ def upgrade() -> None:
     sa.Column('amount', sa.Numeric(precision=10, scale=2), nullable=False),
     sa.Column('provider', sa.String(), nullable=False),
     sa.Column('transaction_id', sa.String(), nullable=True),
-    sa.Column('payment_link', sa.String(), nullable=True),
+    sa.Column('payment_session_id', sa.String(), nullable=True),
     sa.Column('status', sa.Enum('PENDING', 'SUCCESS', 'FAILED', name='paymentstatus'), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.PrimaryKeyConstraint('id'),

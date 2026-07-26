@@ -45,7 +45,6 @@ async def create_payment(
     )
 
     transaction_id = cashfree_res.get("cf_order_id") or f"tx_{order_id}"
-    payment_link = cashfree_res.get("payment_link")
     session_id = cashfree_res.get("payment_session_id")
 
     existing_payment = db.query(Payment).filter(Payment.order_id == order_id).first()
@@ -53,7 +52,7 @@ async def create_payment(
     if existing_payment:
         existing_payment.amount = amount
         existing_payment.transaction_id = transaction_id
-        existing_payment.payment_link = payment_link
+        existing_payment.payment_session_id = session_id
         existing_payment.status = PaymentStatus.PENDING
         db.commit()
         db.refresh(existing_payment)
@@ -65,7 +64,7 @@ async def create_payment(
             amount=amount,
             provider="cashfree",
             transaction_id=transaction_id,
-            payment_link=payment_link,
+            payment_session_id=session_id,
             status=PaymentStatus.PENDING,
         )
         db.add(payment_record)
@@ -74,7 +73,6 @@ async def create_payment(
 
     return CreatePaymentResponse(
         payment_session_id=session_id,
-        payment_link=payment_link,
         payment_mode="sandbox" if "sandbox" in CASHFREE_BASE_URL.lower() else "production",
         order_id=order_id,
         transaction_id=transaction_id,
@@ -86,7 +84,7 @@ async def create_payment(
             "amount": float(payment_record.amount),
             "provider": payment_record.provider,
             "transaction_id": payment_record.transaction_id,
-            "payment_link": payment_record.payment_link,
+            "payment_session_id": payment_record.payment_session_id,
             "status": payment_record.status.value,
         }
     )
@@ -221,3 +219,68 @@ async def get_by_order_id(
     if not payment:
         raise HTTPException(status_code=404, detail="Payment record not found")
     return payment
+
+
+@router.post("/verify/{order_id}")
+@router.get("/verify/{order_id}")
+async def verify_payment(
+    order_id: str,
+    db: Session = Depends(get_db)
+):
+    # Fetch latest status from Cashfree
+    cashfree_order = await CashfreeClient.get_order(order_id)
+    
+    order_status = cashfree_order.get("order_status")
+    # In Cashfree, order status can be 'PAID', 'SUCCESS', 'COMPLETED'
+    is_success = order_status in ["PAID", "SUCCESS", "COMPLETED"]
+    
+    new_status = PaymentStatus.SUCCESS if is_success else PaymentStatus.FAILED
+    
+    existing_payment = db.query(Payment).filter(Payment.order_id == order_id).first()
+    cf_payment_id = cashfree_order.get("cf_order_id") or order_id
+    
+    if existing_payment:
+        was_success = existing_payment.status == PaymentStatus.SUCCESS
+        existing_payment.status = new_status
+        existing_payment.transaction_id = str(cf_payment_id)
+        db.commit()
+        db.refresh(existing_payment)
+        payment_record = existing_payment
+    else:
+        was_success = False
+        payment_record = Payment(
+            order_id=order_id,
+            user_id="unknown",
+            amount=cashfree_order.get("order_amount", 0.0),
+            provider="cashfree",
+            transaction_id=str(cf_payment_id),
+            status=new_status,
+        )
+        db.add(payment_record)
+        db.commit()
+        db.refresh(payment_record)
+        
+    if is_success and not was_success:
+        # Notify Order Service
+        try:
+            await ServiceHTTPClient.notify_order_service(
+                order_id=order_id,
+                status="SUCCESS",
+                transaction_id=str(cf_payment_id),
+            )
+        except Exception as oe:
+            logger.error(f"[Verify] Failed to notify order service: {oe}")
+            
+        # Clear Cart
+        try:
+            if payment_record.user_id and payment_record.user_id != "unknown":
+                await ServiceHTTPClient.clear_user_cart(payment_record.user_id)
+        except Exception as ce:
+            logger.error(f"[Verify] Failed to clear cart: {ce}")
+            
+    return {
+        "status": payment_record.status.value,
+        "order_id": order_id,
+        "transaction_id": payment_record.transaction_id,
+        "amount": float(payment_record.amount),
+    }

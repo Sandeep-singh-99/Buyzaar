@@ -158,3 +158,24 @@ export const useFetchOrderDetails = (orderId: string, enabled: boolean = true) =
     refetchOnWindowFocus: false,
   });
 };
+
+/**
+  POST /payments/verify/:orderId - Verify and sync payment status with Cashfree
+ */
+export const verifyPayment = async (orderId: string): Promise<any> => {
+  const response = await axiosClient.post(`/payments/verify/${orderId}`);
+  return response.data;
+};
+
+/**
+  TanStack Query Hook: Verify Payment
+ */
+export const useVerifyPayment = (orderId: string, enabled: boolean = true) => {
+  return useQuery<any, AxiosError<ApiErrorResponse>>({
+    queryKey: ["verifyPayment", orderId],
+    queryFn: () => verifyPayment(orderId),
+    enabled: !!orderId && enabled,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+};

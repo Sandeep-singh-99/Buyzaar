@@ -82,7 +82,6 @@ class OrderCreateResponse(BaseModel):
     message: str
     order: OrderResponse
     payment_session_id: Optional[str] = None
-    payment_link: Optional[str] = None
     payment_mode: Optional[str] = None
 
 

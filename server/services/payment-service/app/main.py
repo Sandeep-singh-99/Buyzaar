@@ -9,7 +9,10 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="Payment Service API",
     description="Microservice managing Cashfree payments, webhooks, and status queries",
-    version="1.0.0"
+    version="1.0.0",
+    docs_url="/payments/docs",
+    redoc_url="/payments/redoc",
+    openapi_url="/payments/openapi.json",
 )
 
 app.add_middleware(

@@ -14,10 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RatingStars } from "@/components/RatingStars";
 import { QuantitySelector } from "@/components/QuantitySelector";
-import { useAppDispatch } from "@/hooks/hooks";
-import { addToCart } from "@/redux/slice/cartSlice";
 import { useAddToCart } from "@/api/cartApi";
-import { toast } from "sonner";
 import MDEditor from "@uiw/react-md-editor";
 
 
@@ -34,7 +31,6 @@ export default function ProductDetail() {
 
   const [activeImage, setActiveImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
-  const dispatch = useAppDispatch();
   const { mutate: addToCartMutation, isPending: isAddingToCart } = useAddToCart();
 
   const { data: product, isLoading } = useGetProductById(id as string);
@@ -259,10 +255,10 @@ export default function ProductDetail() {
             value="details"
             className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground"
           >
-            <div data-color-mode={resolvedTheme} className="bg-transparent">
+            <div data-color-mode={resolvedTheme}>
               <MDEditor.Markdown 
                 source={product?.details || product?.description || "No details available."} 
-                style={{ backgroundColor: 'transparent', color: 'inherit' }}
+                style={{ backgroundColor: 'transparent' }}
               />
             </div>
           </TabsContent>

@@ -1,12 +1,12 @@
 import React from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { 
-  LayoutDashboard, 
-  Package, 
-  ShoppingCart, 
+import {
+  LayoutDashboard,
+  Package,
+  ShoppingCart,
   Users,
   LogOut,
-  Settings
+  Settings,
 } from "lucide-react";
 import {
   Sidebar,
@@ -31,7 +31,6 @@ const items = [
   { title: "Products", url: "/admin/products", icon: Package },
   { title: "Orders", url: "/admin/orders", icon: ShoppingCart },
   { title: "Users", url: "/admin/users", icon: Users },
-  { title: "Settings", url: "/admin/settings", icon: Settings },
 ];
 
 export function AdminLayout() {
@@ -44,12 +43,18 @@ export function AdminLayout() {
       <div className="flex min-h-screen w-full bg-slate-50 dark:bg-background">
         <Sidebar variant="sidebar" collapsible="icon">
           <SidebarHeader className="border-b border-sidebar-border h-[60px] flex items-center px-4">
-            <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-violet-500 hidden group-data-[state=expanded]:block">
+            <Link
+              to={"/"}
+              className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-violet-500 hidden group-data-[state=expanded]:block"
+            >
               Buyzaar Admin
-            </h2>
-            <span className="font-bold text-xl text-violet-500 group-data-[state=expanded]:hidden block">
+            </Link>
+            <Link
+              to={"/"}
+              className="font-bold text-xl text-violet-500 group-data-[state=expanded]:hidden block"
+            >
               B
-            </span>
+            </Link>
           </SidebarHeader>
           <SidebarContent>
             <SidebarGroup>
@@ -58,7 +63,10 @@ export function AdminLayout() {
                 <SidebarMenu>
                   {items.map((item) => (
                     <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild isActive={location.pathname === item.url}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={location.pathname === item.url}
+                      >
                         <Link to={item.url}>
                           <item.icon />
                           <span>{item.title}</span>
@@ -74,17 +82,19 @@ export function AdminLayout() {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
-                  <Link to="/">
+                  <div>
                     <Avatar className="h-6 w-6 rounded-md">
                       <AvatarImage src={user?.profile_image} />
                       <AvatarFallback className="rounded-md">AD</AvatarFallback>
                     </Avatar>
-                    <span className="truncate">{user?.user_name || "Admin User"}</span>
-                  </Link>
+                    <span className="truncate">
+                      {user?.user_name || "Admin User"}
+                    </span>
+                  </div>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton className="text-destructive">
+                <SidebarMenuButton className="text-destructive cursor-pointer">
                   <LogOut />
                   <span>Logout</span>
                 </SidebarMenuButton>
@@ -92,14 +102,11 @@ export function AdminLayout() {
             </SidebarMenu>
           </SidebarFooter>
         </Sidebar>
-        
+
         <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
           <header className="h-[60px] border-b border-border bg-card flex items-center px-6 shrink-0">
             <SidebarTrigger className="-ml-2 mr-2" />
             <div className="flex-1" />
-            <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">
-              View Store
-            </Link>
           </header>
           <main className="flex-1 overflow-y-auto p-6">
             <Outlet />

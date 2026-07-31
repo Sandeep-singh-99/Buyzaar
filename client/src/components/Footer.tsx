@@ -1,6 +1,5 @@
 import React from "react";
 import { Link } from "react-router-dom";
-// import { Facebook, Twitter, Instagram, Youtube, Mail } from "lucide-react";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Mail } from "lucide-react";
@@ -18,20 +17,6 @@ export function Footer() {
             <p className="text-muted-foreground mb-6 leading-relaxed">
               Your one-stop destination for premium products. We offer the best quality items with fast shipping and excellent customer service.
             </p>
-            {/* <div className="flex space-x-4">
-              <a href="#" className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary hover:text-primary-foreground transition-colors">
-                <Facebook size={18} />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary hover:text-primary-foreground transition-colors">
-                <Twitter size={18} />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary hover:text-primary-foreground transition-colors">
-                <Instagram size={18} />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary hover:text-primary-foreground transition-colors">
-                <Youtube size={18} />
-              </a>
-            </div> */}
           </div>
 
           {/* Quick Links */}

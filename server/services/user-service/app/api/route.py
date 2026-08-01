@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from app.db.database import get_db
 from app.schemas.user_schema import UserResponse, UserCreate, UserLogin, UserLogout
-from app.models.user import User
+from app.models.user import User, userRole
 from app.utils.utils import hash_password, verify_password, create_access_token
 from shared.cloudinary import upload_image, delete_image
 from shared.dependencies import get_current_user, TokenData
@@ -110,3 +110,12 @@ def logout(request: Request, response: Response, current_user: TokenData = Depen
            samesite="none"   
     )
     return {"message": "Logged out successfully"}
+
+
+@router.get('/total-users')
+async def get_total_users(request: Request, db: Session = Depends(get_db), current_user: TokenData = Depends(get_current_user)):
+    if current_user.role != userRole.ADMIN:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to access this resource")
+
+    total_users = db.query(User).count()
+    return {"total_users": total_users}

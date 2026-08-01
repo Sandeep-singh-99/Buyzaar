@@ -11,9 +11,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useTotalUsers } from '@/api/authApi';
+import { useGetTotalProducts } from '@/api/productApi';
+import { useGetTotalOrders, useGetTotalRevenue } from '@/api/payment.api';
 
 export default function Dashboard() {
   const recentOrders = dummyOrders.slice(0, 5);
+
+  const { data } = useTotalUsers();
+
+  const { data: totalProducts } = useGetTotalProducts();
+
+  const { data: totalOrders } = useGetTotalOrders();
+
+  const { data: totalRevenue } = useGetTotalRevenue();
 
   return (
     <div className="space-y-6">
@@ -29,7 +40,7 @@ export default function Dashboard() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$45,231.89</div>
+            <div className="text-2xl font-bold">${totalRevenue?.total_revenue?.toLocaleString() ?? 0}</div>
             <p className="text-xs text-emerald-500 flex items-center mt-1">
               <ArrowUpRight className="h-3 w-3 mr-1" /> +20.1% from last month
             </p>
@@ -42,7 +53,7 @@ export default function Dashboard() {
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+2350</div>
+            <div className="text-2xl font-bold">+{totalOrders?.total_orders ?? 0}</div>
             <p className="text-xs text-emerald-500 flex items-center mt-1">
               <ArrowUpRight className="h-3 w-3 mr-1" /> +15.2% from last month
             </p>
@@ -55,7 +66,7 @@ export default function Dashboard() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">342</div>
+            <div className="text-2xl font-bold">+{totalProducts?.total_products ?? 0}</div>
             <p className="text-xs text-muted-foreground flex items-center mt-1">
               +12 new this week
             </p>
@@ -68,7 +79,7 @@ export default function Dashboard() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+573</div>
+            <div className="text-2xl font-bold">+{data?.total_users ?? 0}</div>
             <p className="text-xs text-red-500 flex items-center mt-1">
               <ArrowDownRight className="h-3 w-3 mr-1" /> -2.4% from last week
             </p>

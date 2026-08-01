@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime, timezone, timedelta
@@ -14,6 +14,7 @@ from app.schema.order import (
     OrderCreateResponse,
     OrderStatusUpdate,
     PaymentStatusCallback,
+    AdminOrderResponse
 )
 from app.core.http_client import ServiceHTTPClient
 from shared.dependencies import get_current_user, TokenData
@@ -272,6 +273,14 @@ async def get_orders(
     return orders
 
 
+@router.get('/total-orders')
+async def get_total_orders(request: Request, db: Session = Depends(get_db), current_user: TokenData = Depends(get_current_user)):
+    if current_user.role != "ADMIN":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to access this resource")
+
+    total_orders = db.query(Order).count()
+    return {"total_orders": total_orders}
+
 @router.get(
     "/admin",
     response_model=List[OrderResponse],
@@ -291,6 +300,26 @@ async def get_admin_orders(
     orders = db.query(Order).order_by(Order.created_at.desc()).all()
     return orders
 
+
+@router.get("/admin/summary", response_model=List[AdminOrderResponse], summary="Admin: Get Orders Summary", description="Retrieve a summary of all orders for admin dashboard.")
+async def get_admin_orders_summary(request: Request, db: Session = Depends(get_db), current_user: TokenData = Depends(get_current_user)):
+    if current_user.role != 'ADMIN':
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to access this resource")
+
+    orders = (db.query(Order).order_by(Order.created_at.desc())).all()
+
+    return [
+        AdminOrderResponse(
+            order_id=order.id,
+            order_number=order.order_number,
+            date=order.created_at,
+            customer_name=order.shipping_name,
+            items=len(order.items),
+            status=order.status,
+            total=order.total_amount,
+        )
+        for order in orders
+    ]
 
 @router.get(
     "/user/{user_id}",

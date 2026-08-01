@@ -16,6 +16,14 @@ interface ApiErrorResponse {
   error?: string;
 }
 
+interface TotalOrdersResponse {
+  total_orders: number;
+}
+
+interface TotalRevenueResponse {
+  total_revenue: number;
+}
+
 /**
   POST /orders - Create order and initiate Cashfree session
  */
@@ -179,3 +187,33 @@ export const useVerifyPayment = (orderId: string, enabled: boolean = true) => {
     retry: 1,
   });
 };
+
+
+export const useGetTotalOrders = () => {
+  return useQuery<TotalOrdersResponse | null, AxiosError<ApiErrorResponse>>({
+    queryKey: ["totalOrders"],
+    queryFn: async () => {
+      const response = await axiosClient.get("/orders/total-orders");
+      return response.data;
+    },
+    staleTime: Infinity,
+    gcTime: 10 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+}
+
+
+export const useGetTotalRevenue = () => {
+  return useQuery<TotalRevenueResponse | null, AxiosError<ApiErrorResponse>>({
+    queryKey: ["totalRevenue"],
+    queryFn: async () => {
+      const response = await axiosClient.get("/payments/total-revenue");
+      return response.data;
+    },
+    staleTime: Infinity,
+    gcTime: 10 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+}

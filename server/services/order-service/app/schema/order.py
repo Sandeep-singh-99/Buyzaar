@@ -93,3 +93,15 @@ class OrderStatusUpdate(BaseModel):
 class PaymentStatusCallback(BaseModel):
     status: str = Field(..., description="SUCCESS or FAILED from Payment Gateway/Webhook")
     transaction_id: Optional[str] = None
+
+
+class AdminOrderResponse(BaseModel):
+    order_id: str
+    order_number: str
+    date: datetime
+    customer_name: str | None
+    items: int
+    status: str
+    total: Decimal
+
+    model_config = ConfigDict(from_attributes=True)

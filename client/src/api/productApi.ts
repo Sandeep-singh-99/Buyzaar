@@ -8,6 +8,10 @@ interface ApiErrorResponse {
   message: string;
 }
 
+interface TotalProductsResponse {
+  total_products: number;
+}
+
 export const useCreateProduct = () => {
   const queryClient = useQueryClient();
   return useMutation<IProducts, AxiosError<ApiErrorResponse>, FormData>({
@@ -174,5 +178,20 @@ export const useGetProductsByCategory = (
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     placeholderData: (previousData) => previousData,
+  });
+};
+
+
+export const useGetTotalProducts = () => {
+  return useQuery<TotalProductsResponse | null, AxiosError<ApiErrorResponse>>({
+    queryKey: ["total-products"],
+    queryFn: async () => {
+      const response = await axiosClient.get("/api/products/total-products");
+      return response.data;
+    },
+    staleTime: Infinity,
+    gcTime: 10 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 };

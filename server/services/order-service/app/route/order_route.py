@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime, timezone, timedelta
@@ -271,6 +271,14 @@ async def get_orders(
     orders = db.query(Order).filter(Order.user_id == current_user.user_id).order_by(Order.created_at.desc()).all()
     return orders
 
+
+@router.get('/total-orders')
+async def get_total_orders(request: Request, db: Session = Depends(get_db), current_user: TokenData = Depends(get_current_user)):
+    if current_user.role != "ADMIN":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to access this resource")
+
+    total_orders = db.query(Order).count()
+    return {"total_orders": total_orders}
 
 @router.get(
     "/admin",

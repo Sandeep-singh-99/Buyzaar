@@ -2,6 +2,7 @@ import json
 import logging
 from typing import Dict, Any, List
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.model.payment import Payment, PaymentStatus
@@ -9,12 +10,23 @@ from app.schema.payment import PaymentCreate, PaymentOut, CreatePaymentResponse,
 from app.core.cashfree import CashfreeClient
 from app.core.http_client import ServiceHTTPClient
 from app.core.config import CASHFREE_BASE_URL
+from shared.dependencies import TokenData, get_current_user
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/payments", tags=["Payment Service"])
 webhook_router = APIRouter(tags=["Cashfree Webhook"])
 
+
+@router.get("/total-revenue")
+async def get_total_revenue(request: Request, db: Session = Depends(get_db), current_user: TokenData = Depends(get_current_user)):
+    if current_user.role != "ADMIN":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to access this resource")
+
+    total_revenue = db.query(Payment).filter(Payment.status == PaymentStatus.SUCCESS).with_entities(
+        func.sum(Payment.amount)
+    ).scalar() or 0.0
+    return {"total_revenue": float(total_revenue)}
 
 @router.post("/create", response_model=CreatePaymentResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=CreatePaymentResponse, status_code=status.HTTP_201_CREATED)

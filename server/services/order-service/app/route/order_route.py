@@ -17,7 +17,7 @@ from app.schema.order import (
     OrderStatusUpdate,
     PaymentStatusCallback,
     AdminOrderResponse,
-    AdminOrderSummaryPage
+    AdminOrderSummaryPage,
 )
 from app.core.http_client import ServiceHTTPClient
 from shared.dependencies import get_current_user, TokenData

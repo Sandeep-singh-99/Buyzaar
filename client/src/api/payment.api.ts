@@ -254,3 +254,17 @@ export const useGetOrderSummary = (params: OrderQueryParams) => {
     placeholderData: (previousData) => previousData,
   })
 }
+
+export const useRevenueOverview = () => {
+  return useQuery({
+    queryKey: ["revenue-overview"],
+    queryFn: async () => {
+      const response = await axiosClient.get("/payments/admin/revenue-overview");
+      return response.data;
+    },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  })
+}

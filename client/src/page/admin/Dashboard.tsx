@@ -29,7 +29,22 @@ import {
   useGetLatestOrders,
   useGetTotalOrders,
   useGetTotalRevenue,
+  useRevenueOverview,
 } from "@/api/payment.api";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import {
+  type ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+
+const chartConfig = {
+  revenue: {
+    label: "Revenue",
+    color: "hsl(var(--primary))",
+  },
+} satisfies ChartConfig;
 
 export default function Dashboard() {
   const { data } = useTotalUsers();
@@ -41,6 +56,8 @@ export default function Dashboard() {
   const { data: totalRevenue } = useGetTotalRevenue();
 
   const { data: latestOrders } = useGetLatestOrders();
+
+  const { data: revenue } = useRevenueOverview();
 
   return (
     <div className="space-y-6">
@@ -130,66 +147,49 @@ export default function Dashboard() {
           <CardHeader>
             <CardTitle>Revenue Overview</CardTitle>
             <CardDescription>
-              Monthly revenue for the current year
+              Monthly revenue for {revenue?.current_year ?? new Date().getFullYear()}
             </CardDescription>
           </CardHeader>
           <CardContent className="pl-2">
-            <div className="h-[300px] w-full flex items-end justify-between px-4 pb-4 gap-2 border-b border-l border-border relative">
-              {/* Simple CSS Chart Placeholder */}
-              <div className="absolute top-0 left-0 w-full h-full flex flex-col justify-between pt-4 pb-4 text-[10px] text-muted-foreground opacity-50">
-                <div className="border-t border-border/50 w-full text-right pr-2 -mt-1.5">
-                  $50k
-                </div>
-                <div className="border-t border-border/50 w-full text-right pr-2 -mt-1.5">
-                  $37.5k
-                </div>
-                <div className="border-t border-border/50 w-full text-right pr-2 -mt-1.5">
-                  $25k
-                </div>
-                <div className="border-t border-border/50 w-full text-right pr-2 -mt-1.5">
-                  $12.5k
-                </div>
-                <div className="text-right pr-2">0</div>
-              </div>
-
-              <div className="w-full flex justify-between items-end h-full pl-8 z-10 gap-2">
-                {[30, 45, 20, 60, 80, 50, 90, 75, 85, 40, 65, 55].map(
-                  (height, i) => (
-                    <div
-                      key={i}
-                      className="w-full flex flex-col items-center gap-2 group"
-                    >
-                      <div
-                        className="w-full bg-primary/20 hover:bg-violet-500 rounded-t-sm transition-colors relative"
-                        style={{ height: `${height}%` }}
-                      >
-                        <div className="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-popover text-popover-foreground text-xs py-1 px-2 rounded shadow-md pointer-events-none transition-opacity">
-                          ${height * 500}
-                        </div>
-                      </div>
-                      <span className="text-[10px] text-muted-foreground uppercase">
-                        {
-                          [
-                            "Jan",
-                            "Feb",
-                            "Mar",
-                            "Apr",
-                            "May",
-                            "Jun",
-                            "Jul",
-                            "Aug",
-                            "Sep",
-                            "Oct",
-                            "Nov",
-                            "Dec",
-                          ][i]
-                        }
-                      </span>
-                    </div>
-                  ),
-                )}
-              </div>
-            </div>
+            <ChartContainer config={chartConfig} className="h-[300px] w-full">
+              <BarChart
+                data={revenue?.data ?? []}
+                margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
+              >
+                <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="month"
+                  tickLine={false}
+                  tickMargin={10}
+                  axisLine={false}
+                />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(val) =>
+                    `₹${val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val}`
+                  }
+                />
+                <ChartTooltip
+                  cursor={false}
+                  content={
+                    <ChartTooltipContent
+                      formatter={(val) =>
+                        Number(val).toLocaleString("en-IN", {
+                          style: "currency",
+                          currency: "INR",
+                        })
+                      }
+                    />
+                  }
+                />
+                <Bar
+                  dataKey="revenue"
+                  fill="#3b82f6"
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ChartContainer>
           </CardContent>
         </Card>
 

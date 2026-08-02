@@ -105,3 +105,10 @@ class AdminOrderResponse(BaseModel):
     total: Decimal
 
     model_config = ConfigDict(from_attributes=True)
+
+class AdminOrderSummaryPage(BaseModel):
+    total: int
+    page: int
+    limit: int
+    total_pages: int
+    orders: List[AdminOrderResponse]

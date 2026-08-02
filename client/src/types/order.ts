@@ -65,3 +65,41 @@ export interface IPaymentResponse {
   transaction_id?: string;
   status: string;
 }
+
+
+export interface IOrderSummary {
+  order_id: string;
+  order_number: string;
+  date: string;
+  customer_name: string;
+  total: number;
+  items: number;
+  status: string;
+}
+
+export interface OrderSummary {
+  order_id: string;
+  order_number: string;
+  date: string;
+  customer_name: string;
+  items: number;
+  status: string;
+  total: string;
+}
+
+export interface OrderSummaryResponse {
+  total: number;
+  page: number;
+  limit: number;
+  total_pages: number;
+  orders: OrderSummary[];
+}
+
+export interface OrderQueryParams {
+  page?: number;
+  limit?: number;
+  status?: string;
+  start_date?: string;
+  end_date?: string;
+  search?: string;
+}

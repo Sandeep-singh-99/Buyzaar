@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Search, Edit, Trash2, MoreHorizontal } from 'lucide-react';
-import { dummyProducts } from '@/lib/data';
+import { Search, Edit, Trash2, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AddProductDialog } from '@/components/admin/AddProductDialog';
 import { EditProductDialog } from '@/components/admin/EditProductDialog';
@@ -41,11 +40,6 @@ export default function AdminProducts() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const limit = 10;
   
-  const filteredProducts = dummyProducts.filter(p => 
-    p.name.toLowerCase().includes(search.toLowerCase()) || 
-    p.category.toLowerCase().includes(search.toLowerCase())
-  );
-
   const { data, isLoading, isError } = useGetProducts({
     search,
     page,
@@ -149,11 +143,18 @@ export default function AdminProducts() {
                     </TableCell>
 
                     <TableCell className="font-medium">
-                      ${product.price || "0.00"}
+                      {/* ${product.price || "0.00"} */}
+                      {Number(product.price).toLocaleString("en-IN", {
+                        style: "currency",
+                        currency: "INR",
+                      })}
                     </TableCell>
 
                     <TableCell>
-                      ${product.sales_price || "0.00"}
+                      {Number(product.sales_price).toLocaleString("en-IN", {
+                        style: "currency",
+                        currency: "INR",
+                      })}
                     </TableCell>
 
                     <TableCell className="text-right">

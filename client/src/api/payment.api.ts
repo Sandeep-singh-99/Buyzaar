@@ -8,6 +8,9 @@ import type {
   IPaymentCreatePayload,
   IPaymentResponse,
   IOrderResponse,
+  IOrderSummary,
+  OrderSummaryResponse,
+  OrderQueryParams,
 } from "@/types/order";
 
 interface ApiErrorResponse {
@@ -216,4 +219,52 @@ export const useGetTotalRevenue = () => {
     refetchOnMount: false,
     refetchOnWindowFocus: false,
   });
+}
+
+
+export const useGetLatestOrders = () => {
+  return useQuery<IOrderSummary[], AxiosError<ApiErrorResponse>>({
+    queryKey: ["latestOrders"],
+    queryFn: async () => {
+      const response = await axiosClient.get("/orders/admin/lastest-orders");
+      return response.data;
+    },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  })
+}
+
+
+export const useGetOrderSummary = (params: OrderQueryParams) => {
+  return useQuery<OrderSummaryResponse, AxiosError<ApiErrorResponse>>({
+    queryKey: ["orderSummary", params],
+
+    queryFn: async () => {
+      const response = await axiosClient.get("/orders/admin/summary", { params });
+      return response.data;
+    },
+
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+
+    placeholderData: (previousData) => previousData,
+  })
+}
+
+export const useRevenueOverview = () => {
+  return useQuery({
+    queryKey: ["revenue-overview"],
+    queryFn: async () => {
+      const response = await axiosClient.get("/payments/admin/revenue-overview");
+      return response.data;
+    },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  })
 }

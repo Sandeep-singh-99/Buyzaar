@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
-import { Search, Eye, Filter } from 'lucide-react';
-import { dummyOrders } from '@/lib/data';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
+import React, { useState } from "react";
+import { Search, Eye, Filter } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -13,21 +12,32 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useGetOrderSummary } from "@/api/payment.api";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationPrevious,
+  PaginationNext,
+} from "@/components/ui/pagination";
 
 export default function AdminOrders() {
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
 
-  const filteredOrders = dummyOrders.filter(o => 
-    o.id.toLowerCase().includes(search.toLowerCase()) || 
-    o.customer.toLowerCase().includes(search.toLowerCase())
-  );
+  const limit = 10;
+
+  const { data } = useGetOrderSummary({ page, limit });
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
-          <p className="text-muted-foreground">View and manage customer orders.</p>
+          <p className="text-muted-foreground">
+            View and manage customer orders.
+          </p>
         </div>
         <Button variant="outline">
           <Filter className="mr-2 h-4 w-4" /> Export CSV
@@ -46,10 +56,30 @@ export default function AdminOrders() {
             />
           </div>
           <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0 hide-scrollbar">
-            <Badge variant="secondary" className="px-3 py-1 cursor-pointer whitespace-nowrap">All Orders</Badge>
-            <Badge variant="outline" className="px-3 py-1 cursor-pointer whitespace-nowrap bg-background text-muted-foreground hover:text-foreground">Pending</Badge>
-            <Badge variant="outline" className="px-3 py-1 cursor-pointer whitespace-nowrap bg-background text-muted-foreground hover:text-foreground">Processing</Badge>
-            <Badge variant="outline" className="px-3 py-1 cursor-pointer whitespace-nowrap bg-background text-muted-foreground hover:text-foreground">Delivered</Badge>
+            <Badge
+              variant="secondary"
+              className="px-3 py-1 cursor-pointer whitespace-nowrap"
+            >
+              All Orders
+            </Badge>
+            <Badge
+              variant="outline"
+              className="px-3 py-1 cursor-pointer whitespace-nowrap bg-background text-muted-foreground hover:text-foreground"
+            >
+              Pending
+            </Badge>
+            <Badge
+              variant="outline"
+              className="px-3 py-1 cursor-pointer whitespace-nowrap bg-background text-muted-foreground hover:text-foreground"
+            >
+              Processing
+            </Badge>
+            <Badge
+              variant="outline"
+              className="px-3 py-1 cursor-pointer whitespace-nowrap bg-background text-muted-foreground hover:text-foreground"
+            >
+              Delivered
+            </Badge>
           </div>
         </div>
         <CardContent className="p-0">
@@ -66,34 +96,41 @@ export default function AdminOrders() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredOrders.map((order) => (
-                <TableRow key={order.id}>
+              {data?.orders.map((order) => (
+                <TableRow key={order.order_id}>
                   <TableCell className="font-medium">
-                    {order.id}
+                    {order.order_number}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {order.date}
+                    {new Date(order.date).toLocaleDateString("en-IN")}
                   </TableCell>
+                  <TableCell>{order.customer_name}</TableCell>
+                  <TableCell>{order.items} items</TableCell>
                   <TableCell>
-                    {order.customer}
-                  </TableCell>
-                  <TableCell>
-                    {order.items} items
-                  </TableCell>
-                  <TableCell>
-                    <Badge 
+                    <Badge
                       variant={
-                        order.status === 'Delivered' ? 'default' : 
-                        order.status === 'Processing' ? 'secondary' : 
-                        order.status === 'Cancelled' ? 'destructive' : 'outline'
+                        order.status === "Delivered"
+                          ? "default"
+                          : order.status === "Processing"
+                            ? "secondary"
+                            : order.status === "Cancelled"
+                              ? "destructive"
+                              : "outline"
                       }
-                      className={order.status === 'Pending' ? 'border-amber-500 text-amber-500' : ''}
+                      className={
+                        order.status === "Pending"
+                          ? "border-amber-500 text-amber-500"
+                          : ""
+                      }
                     >
                       {order.status}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right font-medium">
-                    ${order.total.toFixed(2)}
+                    {Number(order.total).toLocaleString("en-IN", {
+                      style: "currency",
+                      currency: "INR",
+                    })}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="icon">
@@ -103,9 +140,12 @@ export default function AdminOrders() {
                   </TableCell>
                 </TableRow>
               ))}
-              {filteredOrders.length === 0 && (
+              {data?.orders.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                  <TableCell
+                    colSpan={7}
+                    className="h-24 text-center text-muted-foreground"
+                  >
                     No orders found.
                   </TableCell>
                 </TableRow>
@@ -114,6 +154,70 @@ export default function AdminOrders() {
           </Table>
         </CardContent>
       </Card>
+
+      <div className="flex items-center justify-between px-4 py-2 text-sm text-muted-foreground">
+        <span>
+          Showing {(page - 1) * limit + 1} -
+          {Math.min(page * limit, data?.total ?? 0)} of {data?.total} orders
+        </span>
+
+        <span>
+          Page {page} of {data?.total_pages}
+        </span>
+      </div>
+
+      <div className="border-t p-4">
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                href="#"
+                className={page === 1 ? "pointer-events-none opacity-50" : ""}
+                onClick={(e) => {
+                  e.preventDefault();
+
+                  if (page > 1) {
+                    setPage(page - 1);
+                  }
+                }}
+              />
+            </PaginationItem>
+
+            {Array.from({ length: data?.total_pages ?? 0 }, (_, index) => (
+              <PaginationItem key={index}>
+                <PaginationLink
+                  href="#"
+                  isActive={page === index + 1}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setPage(index + 1);
+                  }}
+                >
+                  {index + 1}
+                </PaginationLink>
+              </PaginationItem>
+            ))}
+
+            <PaginationItem>
+              <PaginationNext
+                href="#"
+                className={
+                  page === data?.total_pages
+                    ? "pointer-events-none opacity-50"
+                    : ""
+                }
+                onClick={(e) => {
+                  e.preventDefault();
+
+                  if (page < (data?.total_pages ?? 1)) {
+                    setPage(page + 1);
+                  }
+                }}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      </div>
     </div>
   );
 }

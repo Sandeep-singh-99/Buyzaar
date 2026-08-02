@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, Any
+from typing import List, Optional, Any
 from pydantic import BaseModel, Field
 from app.model.payment import PaymentStatus
 
@@ -45,3 +45,13 @@ class CreatePaymentResponse(BaseModel):
 class PaymentHistoryResponse(BaseModel):
     count: int
     payments: list[PaymentOut]
+
+
+class MonthlyRevenue(BaseModel):
+    month: str
+    revenue: float
+
+class RevenueOverviewResponse(BaseModel):
+    current_year: int
+    total_revenue: float
+    data: List[MonthlyRevenue]

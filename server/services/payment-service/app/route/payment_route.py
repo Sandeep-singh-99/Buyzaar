@@ -1,12 +1,13 @@
+from datetime import datetime, timezone, timedelta
 import json
 import logging
 from typing import Dict, Any, List
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
-from sqlalchemy import func
+from sqlalchemy import extract, func
 from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.model.payment import Payment, PaymentStatus
-from app.schema.payment import PaymentCreate, PaymentOut, CreatePaymentResponse, PaymentHistoryResponse
+from app.schema.payment import PaymentCreate, PaymentOut, CreatePaymentResponse, RevenueOverviewResponse, PaymentHistoryResponse
 from app.core.cashfree import CashfreeClient
 from app.core.http_client import ServiceHTTPClient
 from app.core.config import CASHFREE_BASE_URL
@@ -27,6 +28,47 @@ async def get_total_revenue(request: Request, db: Session = Depends(get_db), cur
         func.sum(Payment.amount)
     ).scalar() or 0.0
     return {"total_revenue": float(total_revenue)}
+
+@router.get("/admin/revenue-overview", response_model=RevenueOverviewResponse)
+async def revenue_overview(request: Request, db: Session = Depends(get_db), current_user: TokenData = Depends(get_current_user)):
+    if current_user.role != 'ADMIN':
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to access this resource")
+
+    current_year = datetime.utcnow().year
+
+    rows = (
+        db.query(
+            extract("month", Payment.created_at).label("month"),
+            func.sum(Payment.amount).label("revenue"),
+        ).filter(
+            extract("year", Payment.created_at) == current_year,
+            Payment.status == "SUCCESS",
+        ).group_by(
+            extract("month", Payment.created_at)
+        ).all()
+    )
+
+    months = [
+        "Jan","Feb","Mar","Apr","May","Jun",
+        "Jul","Aug","Sep","Oct","Nov","Dec"
+    ]
+
+    revenue = [0] * 12
+
+    for row in rows:
+        revenue[int(row.month) - 1] = float(row.revenue)
+
+    return {
+        "current_year": current_year,
+        "total_revenue": sum(revenue),
+        "data": [
+            {
+                "month": months[i],
+                "revenue": revenue[i]
+            }
+            for i in range(12)
+        ]
+    }
 
 @router.post("/create", response_model=CreatePaymentResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=CreatePaymentResponse, status_code=status.HTTP_201_CREATED)

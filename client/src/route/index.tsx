@@ -24,6 +24,8 @@ import AdminOrders from "@/page/admin/AdminOrders";
 import AdminUsers from "@/page/admin/AdminUsers";
 import ErrorElement from "@/components/ErrorElement";
 
+import Profile from "@/page/Profile";
+
 export const router = createBrowserRouter([
     {
         path: "/",
@@ -73,6 +75,10 @@ export const router = createBrowserRouter([
                     {
                         path: "project",
                         element: <ProjectDetails />
+                    },
+                    {
+                        path: "profile",
+                        element: <Profile />
                     }
                 ]
             },

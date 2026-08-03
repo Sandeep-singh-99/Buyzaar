@@ -55,3 +55,7 @@ class RevenueOverviewResponse(BaseModel):
     current_year: int
     total_revenue: float
     data: List[MonthlyRevenue]
+
+class GetUserTotalRevenueResponse(BaseModel):
+    total_revenue: float
+    average_transaction_value: float

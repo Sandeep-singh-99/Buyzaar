@@ -17,6 +17,7 @@ class UserResponse(BaseModel):
     user_name: Optional[str] = None
     profile_image: Optional[str] = None
     role: userRole
+    created_at: str
 
     class Config:
         from_attributes = True

@@ -119,3 +119,12 @@ async def get_total_users(request: Request, db: Session = Depends(get_db), curre
 
     total_users = db.query(User).count()
     return {"total_users": total_users}
+
+
+@router.get('/all-users', response_model=list[UserResponse])
+async def get_all_users(request: Request, db: Session = Depends(get_db), current_user: TokenData = Depends(get_current_user)):
+    if current_user.role != userRole.ADMIN:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to access this resource")
+
+    users = db.query(User).all()
+    return users

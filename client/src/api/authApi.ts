@@ -136,3 +136,18 @@ export const useTotalUsers = () => {
     refetchOnWindowFocus: false,
   });
 };
+
+
+export const useAllUsers = () => {
+  return useQuery<IAuth[] | null, AxiosError<ApiErrorResponse>>({
+    queryKey: ["allUsers"],
+    queryFn: async () => {
+      const response = await axiosClient.get("/auth/all-users");
+      return response.data;
+    },
+    staleTime: Infinity,
+    gcTime: 10 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+}

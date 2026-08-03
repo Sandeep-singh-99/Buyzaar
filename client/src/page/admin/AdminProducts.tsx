@@ -143,7 +143,6 @@ export default function AdminProducts() {
                     </TableCell>
 
                     <TableCell className="font-medium">
-                      {/* ${product.price || "0.00"} */}
                       {Number(product.price).toLocaleString("en-IN", {
                         style: "currency",
                         currency: "INR",

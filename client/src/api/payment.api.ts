@@ -11,6 +11,7 @@ import type {
   IOrderSummary,
   OrderSummaryResponse,
   OrderQueryParams,
+  UserTotalRevenue,
 } from "@/types/order";
 
 interface ApiErrorResponse {
@@ -268,3 +269,33 @@ export const useRevenueOverview = () => {
     refetchOnWindowFocus: false,
   })
 }
+
+
+export const useGetUserSpendingAnalytics = () => {
+  return useQuery<UserTotalRevenue | null, AxiosError<ApiErrorResponse>>({
+    queryKey: ["user-spending-analytics"],
+    queryFn: async () => {
+      const response = await axiosClient.get("/payments/user-total-revenue");
+      return response.data;
+    },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  })
+}
+
+
+export const useGetUserPaymentSummary = () => {
+  return useQuery({
+    queryKey: ["user-payment-summary"],
+    queryFn: async () => {
+      const response = await axiosClient.get("/payments/user-revenue-summary");
+      return response.data;
+    },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  })
+} 

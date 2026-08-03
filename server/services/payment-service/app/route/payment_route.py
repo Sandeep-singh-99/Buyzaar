@@ -7,7 +7,7 @@ from sqlalchemy import extract, func
 from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.model.payment import Payment, PaymentStatus
-from app.schema.payment import PaymentCreate, PaymentOut, CreatePaymentResponse, RevenueOverviewResponse, PaymentHistoryResponse
+from app.schema.payment import PaymentCreate, PaymentOut, GetUserTotalRevenueResponse, CreatePaymentResponse, RevenueOverviewResponse, PaymentHistoryResponse
 from app.core.cashfree import CashfreeClient
 from app.core.http_client import ServiceHTTPClient
 from app.core.config import CASHFREE_BASE_URL
@@ -29,7 +29,79 @@ async def get_total_revenue(request: Request, db: Session = Depends(get_db), cur
     ).scalar() or 0.0
     return {"total_revenue": float(total_revenue)}
 
-@router.get("/admin/revenue-overview", response_model=RevenueOverviewResponse)
+@router.get("/user-total-revenue", response_model=GetUserTotalRevenueResponse, summary="total revenue and average", description="Get total revenue for a specific user and their average transaction value")
+async def get_user_total_revenue(
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    if not current_user.user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to access this resource")
+
+    total_revenue = db.query(Payment).filter(
+        Payment.user_id == current_user.user_id,
+        Payment.status == PaymentStatus.SUCCESS
+    ).with_entities(
+        func.sum(Payment.amount)
+    ).scalar() or 0.0
+
+    avg_transaction_value = db.query(Payment).filter(
+        Payment.user_id == current_user.user_id,
+        Payment.status == PaymentStatus.SUCCESS
+    ).with_entities(
+        func.avg(Payment.amount)
+    ).scalar() or 0.0
+
+    return {
+        "total_revenue": total_revenue,
+        "average_transaction_value": avg_transaction_value
+    }
+
+@router.get("/user-revenue-summary", response_model=RevenueOverviewResponse, summary="user revenue summary", description="Get revenue summary for specific users")
+async def get_user_revenue_summary(
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    if not current_user.user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to access this resource")
+
+    current_year = datetime.utcnow().year
+
+    rows = (
+        db.query(
+            extract("month", Payment.created_at).label("month"),
+            func.sum(Payment.amount).label("revenue"),
+        ).filter(
+            extract("year", Payment.created_at) == current_year,
+            Payment.user_id == current_user.user_id,
+            Payment.status == "SUCCESS",
+        ).group_by(
+            extract("month", Payment.created_at)
+        ).all()
+    )
+
+    months = [
+            "Jan","Feb","Mar","Apr","May","Jun",
+            "Jul","Aug","Sep","Oct","Nov","Dec"
+    ]
+
+    revenue = [0] * 12
+    
+    for row in rows:
+        revenue[int(row.month) - 1] = float(row.revenue)
+    
+    return {
+        "current_year": current_year,
+        "total_revenue": sum(revenue),
+        "data": [
+            {
+                "month": months[i],
+                "revenue": revenue[i]
+            }
+            for i in range(12)
+        ]
+    }
+
+@router.get("/admin/revenue-overview", response_model=RevenueOverviewResponse, summary="Revenue Overview", description="Get revenue overview for the current year, this endpoint is restricted to admin users only")
 async def revenue_overview(request: Request, db: Session = Depends(get_db), current_user: TokenData = Depends(get_current_user)):
     if current_user.role != 'ADMIN':
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to access this resource")

@@ -7,7 +7,6 @@ import {
 } from "@/data/mockProfileData";
 import type { IAuth } from "@/types/auth";
 import type { IMockUserProfile } from "@/data/mockProfileData";
-import { SpendAnalytics } from "@/components/profile/SpendAnalytics";
 import { OrderHistoryList } from "@/components/profile/OrderHistoryList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -24,6 +23,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import ProfileHeader from "@/components/profile/ProfileHeader";
+import SpendAnalytics from "@/components/profile/SpendAnalytics";
 
 export default function Profile() {
   const { user } = useAppSelector((state) => state.auth);
@@ -73,7 +73,7 @@ export default function Profile() {
 
         {/* Tab 2: Spend Analytics */}
         <TabsContent value="analytics" className="space-y-6 animate-in fade-in-50 duration-300">
-          <SpendAnalytics metrics={mockSpendMetrics} />
+          <SpendAnalytics />
         </TabsContent>
 
         {/* Tab 3: Saved Addresses & Security */}

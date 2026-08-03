@@ -103,3 +103,8 @@ export interface OrderQueryParams {
   end_date?: string;
   search?: string;
 }
+
+export interface UserTotalRevenue {
+  total_revenue: number;
+  average_transaction_value: number;
+}

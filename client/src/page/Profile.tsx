@@ -5,8 +5,8 @@ import {
   mockSpendMetrics,
   mockOrders,
 } from "@/data/mockProfileData";
+import type { IAuth } from "@/types/auth";
 import type { IMockUserProfile } from "@/data/mockProfileData";
-import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { SpendAnalytics } from "@/components/profile/SpendAnalytics";
 import { OrderHistoryList } from "@/components/profile/OrderHistoryList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,6 +23,7 @@ import {
   Lock,
 } from "lucide-react";
 import { toast } from "sonner";
+import ProfileHeader from "@/components/profile/ProfileHeader";
 
 export default function Profile() {
   const { user } = useAppSelector((state) => state.auth);
@@ -35,9 +36,6 @@ export default function Profile() {
     avatar: user?.profile_image || mockUserProfile.avatar,
   });
 
-  const handleUpdateProfile = (updated: Partial<IMockUserProfile>) => {
-    setProfileData((prev) => ({ ...prev, ...updated }));
-  };
 
   return (
     <div className="min-h-screen bg-background text-foreground py-8 px-4 sm:px-6 lg:px-10 max-w-7xl mx-auto space-y-8">
@@ -52,7 +50,7 @@ export default function Profile() {
       </div>
 
       {/* Profile Header Hero Card */}
-      <ProfileHeader profile={profileData} onUpdateProfile={handleUpdateProfile} />
+      <ProfileHeader />
 
       {/* Main Feature Tabs */}
       <Tabs defaultValue="orders" className="space-y-6">

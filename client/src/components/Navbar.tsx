@@ -134,9 +134,11 @@ export default function Navbar() {
                     </Link>
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem className="cursor-pointer">
-                  <User className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
+                <DropdownMenuItem asChild className="cursor-pointer">
+                  <Link to="/profile" className="flex items-center">
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem

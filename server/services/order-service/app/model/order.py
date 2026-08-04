@@ -39,6 +39,8 @@ class Order(Base):
     shipping_phone = Column(String)
     shipping_email = Column(String)
 
+    payment_provider = Column(String, default="Cashfree Payment Gateway", nullable=True)
+
     @property
     def shipping_address(self) -> dict | None:
         if not (self.shipping_address1 or self.shipping_name):
@@ -82,4 +84,9 @@ class OrderItem(Base):
     quantity = Column(Integer, nullable=False)
     subtotal = Column(Numeric(10, 2), nullable=False)
 
+    category = Column(String, nullable=True)
+    variant = Column(String, nullable=True)
+    sku = Column(String, nullable=True)
+
     order = relationship("Order", back_populates="items")
+

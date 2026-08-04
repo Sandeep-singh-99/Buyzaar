@@ -298,4 +298,23 @@ export const useGetUserPaymentSummary = () => {
     refetchOnMount: false,
     refetchOnWindowFocus: false,
   })
-} 
+}
+
+import type { IMockOrder } from "@/data/mockProfileData";
+
+export const getUserOrderHistory = async (): Promise<IMockOrder[]> => {
+  const response = await axiosClient.get<IMockOrder[]>("/orders/history");
+  return response.data;
+};
+
+export const useGetUserOrderHistory = () => {
+  return useQuery<IMockOrder[], AxiosError<ApiErrorResponse>>({
+    queryKey: ["user-order-history"],
+    queryFn: getUserOrderHistory,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+  });
+};
+ 

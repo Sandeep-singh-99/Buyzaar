@@ -2,10 +2,8 @@ import { useState } from "react";
 import { useAppSelector } from "@/hooks/hooks";
 import {
   mockUserProfile,
-  mockSpendMetrics,
   mockOrders,
 } from "@/data/mockProfileData";
-import type { IAuth } from "@/types/auth";
 import type { IMockUserProfile } from "@/data/mockProfileData";
 import { OrderHistoryList } from "@/components/profile/OrderHistoryList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -24,9 +22,11 @@ import {
 import { toast } from "sonner";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import SpendAnalytics from "@/components/profile/SpendAnalytics";
+import { useGetUserOrderHistory } from "@/api/payment.api";
 
 export default function Profile() {
   const { user } = useAppSelector((state) => state.auth);
+  const { data: userOrders } = useGetUserOrderHistory();
 
   // Merge redux user if present with mock profile
   const [profileData, setProfileData] = useState<IMockUserProfile>({
@@ -68,8 +68,9 @@ export default function Profile() {
 
         {/* Tab 1: Orders History & Products */}
         <TabsContent value="orders" className="space-y-6 animate-in fade-in-50 duration-300">
-          <OrderHistoryList orders={mockOrders} />
+          <OrderHistoryList orders={userOrders && userOrders.length > 0 ? userOrders : mockOrders} />
         </TabsContent>
+
 
         {/* Tab 2: Spend Analytics */}
         <TabsContent value="analytics" className="space-y-6 animate-in fade-in-50 duration-300">

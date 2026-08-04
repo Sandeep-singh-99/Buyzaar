@@ -112,3 +112,47 @@ class AdminOrderSummaryPage(BaseModel):
     limit: int
     total_pages: int
     orders: List[AdminOrderResponse]
+
+
+class OrderHistoryItemResponse(BaseModel):
+    id: str
+    order_id: Optional[str] = None
+    product_id: str
+    name: str
+    image: str
+    price: float
+    quantity: int
+    category: str
+    variant: Optional[str] = None
+    sku: str
+    subtotal: float
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class OrderHistoryAddressSchema(BaseModel):
+    name: str
+    street: str
+    city: str
+    state: str
+    zipCode: str
+    country: str
+    phone: Optional[str] = None
+    email: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class OrderHistoryResponse(BaseModel):
+    id: str
+    orderNumber: str
+    date: str
+    totalAmount: float
+    itemCount: int
+    paymentStatus: str
+    paymentProvider: str
+    orderStatus: str
+    items: List[OrderHistoryItemResponse]
+    shippingAddress: OrderHistoryAddressSchema
+
+    model_config = ConfigDict(from_attributes=True)

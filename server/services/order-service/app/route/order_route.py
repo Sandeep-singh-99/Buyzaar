@@ -18,6 +18,9 @@ from app.schema.order import (
     PaymentStatusCallback,
     AdminOrderResponse,
     AdminOrderSummaryPage,
+    OrderHistoryResponse,
+    OrderHistoryItemResponse,
+    OrderHistoryAddressSchema,
 )
 from app.core.http_client import ServiceHTTPClient
 from shared.dependencies import get_current_user, TokenData
@@ -276,7 +279,94 @@ async def get_orders(
     return orders
 
 
+@router.get(
+    "/history",
+    response_model=List[OrderHistoryResponse],
+    summary="Get User Order History for UI",
+    description="Retrieve order history formatted specifically for the client Profile OrderHistoryList component."
+)
+async def get_user_order_history(
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    if not current_user.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User identity could not be verified from token"
+        )
+
+    orders = db.query(Order).filter(Order.user_id == current_user.user_id).order_by(Order.created_at.desc()).all()
+
+    result = []
+    for order in orders:
+        formatted_items = []
+        for item in order.items:
+            img_url = item.product_image or "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=400"
+            sub = float(item.subtotal) if item.subtotal else float(item.price * item.quantity)
+            cat = getattr(item, "category", None) or "Electronics & Tech"
+            var = getattr(item, "variant", None)
+            sku_val = getattr(item, "sku", None) or f"SKU-{item.product_id[:8].upper()}"
+
+            formatted_items.append(
+                OrderHistoryItemResponse(
+                    id=item.id,
+                    order_id=item.order_id,
+                    product_id=item.product_id,
+                    name=item.product_name,
+                    image=img_url,
+                    price=float(item.price),
+                    quantity=item.quantity,
+                    category=cat,
+                    variant=var,
+                    sku=sku_val,
+                    subtotal=sub,
+                )
+            )
+
+        item_count = sum(it.quantity for it in order.items)
+        date_str = order.created_at.strftime("%B %d, %Y") if order.created_at else "Unknown Date"
+
+        raw_pay_status = str(order.payment_status.value if hasattr(order.payment_status, "value") else order.payment_status).upper()
+        if raw_pay_status in ("CONFIRMED", "SUCCESS"):
+            pay_status = "SUCCESS"
+        elif raw_pay_status in ("CANCELLED", "FAILED"):
+            pay_status = "FAILED"
+        else:
+            pay_status = "PENDING"
+
+        shipping_addr = OrderHistoryAddressSchema(
+            name=order.shipping_name or "Customer",
+            street=order.shipping_address1 or "",
+            city=order.shipping_city or "",
+            state=order.shipping_state or "",
+            zipCode=order.shipping_postal_code or "",
+            country=order.shipping_country or "United States",
+            phone=order.shipping_phone,
+            email=order.shipping_email
+        )
+
+        pay_provider = getattr(order, "payment_provider", None) or "Cashfree Payment Gateway"
+
+        result.append(
+            OrderHistoryResponse(
+                id=order.id,
+                orderNumber=order.order_number,
+                date=date_str,
+                totalAmount=float(order.total_amount),
+                itemCount=item_count,
+                paymentStatus=pay_status,
+                paymentProvider=pay_provider,
+                orderStatus=order.status.lower() if order.status else "pending",
+                items=formatted_items,
+                shippingAddress=shipping_addr
+            )
+        )
+
+    return result
+
+
 @router.get('/total-orders')
+
 async def get_total_orders(request: Request, db: Session = Depends(get_db), current_user: TokenData = Depends(get_current_user)):
     if current_user.role != "ADMIN":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to access this resource")
@@ -292,6 +382,7 @@ async def get_user_total_orders(request: Request, db: Session = Depends(get_db),
 
     total_orders = db.query(Order).filter(Order.user_id == current_user.user_id).count()
     return {"total_orders": total_orders}
+
 
 
 @router.get(

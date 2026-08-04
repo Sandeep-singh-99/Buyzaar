@@ -4,11 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -36,11 +32,14 @@ interface OrderHistoryListProps {
   orders: IMockOrder[];
 }
 
-export const OrderHistoryList: React.FC<OrderHistoryListProps> = ({ orders }) => {
+export const OrderHistoryList: React.FC<OrderHistoryListProps> = ({
+  orders,
+}) => {
   const dispatch = useAppDispatch();
   const [selectedTab, setSelectedTab] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [activeInvoiceOrder, setActiveInvoiceOrder] = useState<IMockOrder | null>(null);
+  const [activeInvoiceOrder, setActiveInvoiceOrder] =
+    useState<IMockOrder | null>(null);
 
   // Filter orders based on tab & search query
   const filteredOrders = orders.filter((order) => {
@@ -51,7 +50,7 @@ export const OrderHistoryList: React.FC<OrderHistoryListProps> = ({ orders }) =>
     const matchesSearch =
       order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
       order.items.some((item) =>
-        item.name.toLowerCase().includes(searchQuery.toLowerCase())
+        item.name.toLowerCase().includes(searchQuery.toLowerCase()),
       );
 
     return matchesTab && matchesSearch;
@@ -90,7 +89,11 @@ export const OrderHistoryList: React.FC<OrderHistoryListProps> = ({ orders }) =>
           </Badge>
         );
       default:
-        return <Badge variant="outline" className="capitalize">{status}</Badge>;
+        return (
+          <Badge variant="outline" className="capitalize">
+            {status}
+          </Badge>
+        );
     }
   };
 
@@ -118,7 +121,8 @@ export const OrderHistoryList: React.FC<OrderHistoryListProps> = ({ orders }) =>
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h3 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <ShoppingBag className="h-5 w-5 text-primary" /> Order History ({orders.length})
+            <ShoppingBag className="h-5 w-5 text-primary" /> Order History (
+            {orders.length})
           </h3>
           <p className="text-xs text-muted-foreground">
             View order details, status, and purchased product items
@@ -137,24 +141,43 @@ export const OrderHistoryList: React.FC<OrderHistoryListProps> = ({ orders }) =>
       </div>
 
       {/* Filter Tabs matching backend order statuses */}
-      <Tabs defaultValue="All" onValueChange={setSelectedTab} className="w-full">
+      <Tabs
+        defaultValue="All"
+        onValueChange={setSelectedTab}
+        className="w-full"
+      >
         <TabsList className="grid grid-cols-6 w-full max-w-2xl h-10 p-1 bg-muted/60 rounded-xl">
           <TabsTrigger value="All" className="text-xs font-semibold rounded-lg">
             All ({orders.length})
           </TabsTrigger>
-          <TabsTrigger value="confirmed" className="text-xs font-semibold rounded-lg capitalize">
+          <TabsTrigger
+            value="confirmed"
+            className="text-xs font-semibold rounded-lg capitalize"
+          >
             Confirmed
           </TabsTrigger>
-          <TabsTrigger value="shipped" className="text-xs font-semibold rounded-lg capitalize">
+          <TabsTrigger
+            value="shipped"
+            className="text-xs font-semibold rounded-lg capitalize"
+          >
             Shipped
           </TabsTrigger>
-          <TabsTrigger value="delivered" className="text-xs font-semibold rounded-lg capitalize">
+          <TabsTrigger
+            value="delivered"
+            className="text-xs font-semibold rounded-lg capitalize"
+          >
             Delivered
           </TabsTrigger>
-          <TabsTrigger value="pending" className="text-xs font-semibold rounded-lg capitalize">
+          <TabsTrigger
+            value="pending"
+            className="text-xs font-semibold rounded-lg capitalize"
+          >
             Pending
           </TabsTrigger>
-          <TabsTrigger value="cancelled" className="text-xs font-semibold rounded-lg capitalize">
+          <TabsTrigger
+            value="cancelled"
+            className="text-xs font-semibold rounded-lg capitalize"
+          >
             Cancelled
           </TabsTrigger>
         </TabsList>
@@ -167,9 +190,12 @@ export const OrderHistoryList: React.FC<OrderHistoryListProps> = ({ orders }) =>
             <div className="p-3 bg-muted/50 rounded-full w-12 h-12 mx-auto flex items-center justify-center text-muted-foreground">
               <ShoppingBag className="h-6 w-6" />
             </div>
-            <h4 className="text-lg font-bold text-foreground">No orders found</h4>
+            <h4 className="text-lg font-bold text-foreground">
+              No orders found
+            </h4>
             <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-              We couldn't find any orders matching your selected filter or search query.
+              We couldn't find any orders matching your selected filter or
+              search query.
             </p>
             <Button
               variant="outline"
@@ -206,7 +232,9 @@ export const OrderHistoryList: React.FC<OrderHistoryListProps> = ({ orders }) =>
                     <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                       Date Placed
                     </span>
-                    <p className="text-xs font-medium text-foreground">{order.date}</p>
+                    <p className="text-xs font-medium text-foreground">
+                      {order.date}
+                    </p>
                   </div>
                   <div className="hidden sm:block text-border">|</div>
                   <div>
@@ -214,7 +242,12 @@ export const OrderHistoryList: React.FC<OrderHistoryListProps> = ({ orders }) =>
                       Total Amount
                     </span>
                     <p className="text-xs font-bold text-primary">
-                      ${order.totalAmount.toFixed(2)} ({order.itemCount} {order.itemCount === 1 ? "item" : "items"})
+                      {Number(order.totalAmount).toLocaleString("en-IN", {
+                        style: "currency",
+                        currency: "INR",
+                      })}{" "}
+                      ({order.itemCount}{" "}
+                      {order.itemCount === 1 ? "item" : "items"})
                     </p>
                   </div>
                 </div>
@@ -256,12 +289,23 @@ export const OrderHistoryList: React.FC<OrderHistoryListProps> = ({ orders }) =>
                               {item.category}
                             </span>
                             {item.variant && (
-                              <span>Variant: <strong className="text-foreground">{item.variant}</strong></span>
+                              <span>
+                                Variant:{" "}
+                                <strong className="text-foreground">
+                                  {item.variant}
+                                </strong>
+                              </span>
                             )}
-                            <span className="font-mono text-[11px]">SKU: {item.sku}</span>
+                            <span className="font-mono text-[11px]">
+                              SKU: {item.sku}
+                            </span>
                           </div>
                           <p className="text-xs font-semibold text-foreground/80 pt-0.5">
-                            Qty: {item.quantity} × ${item.price.toFixed(2)}
+                            Qty: {item.quantity} ×{" "}
+                            {Number(item.price).toLocaleString("en-IN", {
+                              style: "currency",
+                              currency: "INR",
+                            })}
                           </p>
                         </div>
                       </div>
@@ -269,7 +313,12 @@ export const OrderHistoryList: React.FC<OrderHistoryListProps> = ({ orders }) =>
                       {/* Product Price & Action Buttons */}
                       <div className="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-2 border-t sm:border-t-0 border-border/40 pt-2 sm:pt-0">
                         <span className="text-sm font-extrabold text-foreground">
-                          ${(item.subtotal || item.price * item.quantity).toFixed(2)}
+                          {Number(
+                            item.subtotal || item.price * item.quantity,
+                          ).toLocaleString("en-IN", {
+                            style: "currency",
+                            currency: "INR",
+                          })}
                         </span>
                         <div className="flex items-center gap-2">
                           <Button
@@ -289,11 +338,19 @@ export const OrderHistoryList: React.FC<OrderHistoryListProps> = ({ orders }) =>
                 {/* Footer Bar of Order Card (Payment provider & status) */}
                 <div className="pt-3 border-t border-border/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-muted-foreground">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-medium">Payment Gateway: {order.paymentProvider}</span>
+                    <span className="font-medium">
+                      Payment Gateway: {order.paymentProvider}
+                    </span>
                     <span>•</span>
                     <span className="font-semibold text-foreground">
                       Status:{" "}
-                      <span className={order.paymentStatus === "SUCCESS" ? "text-emerald-600 dark:text-emerald-400 font-bold" : "text-amber-600 font-bold"}>
+                      <span
+                        className={
+                          order.paymentStatus === "SUCCESS"
+                            ? "text-emerald-600 dark:text-emerald-400 font-bold"
+                            : "text-amber-600 font-bold"
+                        }
+                      >
                         {order.paymentStatus}
                       </span>
                     </span>
@@ -306,7 +363,8 @@ export const OrderHistoryList: React.FC<OrderHistoryListProps> = ({ orders }) =>
                       className="h-8 text-xs font-semibold gap-1.5 rounded-lg w-full sm:w-auto"
                       onClick={() => setActiveInvoiceOrder(order)}
                     >
-                      <FileText className="h-3.5 w-3.5 text-primary" /> Order Receipt
+                      <FileText className="h-3.5 w-3.5 text-primary" /> Order
+                      Receipt
                     </Button>
                   </div>
                 </div>
@@ -318,7 +376,10 @@ export const OrderHistoryList: React.FC<OrderHistoryListProps> = ({ orders }) =>
 
       {/* Invoice Modal */}
       {activeInvoiceOrder && (
-        <Dialog open={!!activeInvoiceOrder} onOpenChange={() => setActiveInvoiceOrder(null)}>
+        <Dialog
+          open={!!activeInvoiceOrder}
+          onOpenChange={() => setActiveInvoiceOrder(null)}
+        >
           <DialogContent className="sm:max-w-[600px] rounded-2xl">
             <DialogHeader>
               <DialogTitle className="text-xl font-bold flex items-center gap-2">
@@ -333,17 +394,29 @@ export const OrderHistoryList: React.FC<OrderHistoryListProps> = ({ orders }) =>
               <div className="flex justify-between text-xs font-semibold">
                 <div>
                   <p className="text-muted-foreground uppercase">Billed To</p>
-                  <p className="text-foreground text-sm font-bold">{activeInvoiceOrder.shippingAddress.name}</p>
-                  <p className="text-muted-foreground">{activeInvoiceOrder.shippingAddress.street}</p>
+                  <p className="text-foreground text-sm font-bold">
+                    {activeInvoiceOrder.shippingAddress.name}
+                  </p>
                   <p className="text-muted-foreground">
-                    {activeInvoiceOrder.shippingAddress.city}, {activeInvoiceOrder.shippingAddress.state} {activeInvoiceOrder.shippingAddress.zipCode}
+                    {activeInvoiceOrder.shippingAddress.street}
+                  </p>
+                  <p className="text-muted-foreground">
+                    {activeInvoiceOrder.shippingAddress.city},{" "}
+                    {activeInvoiceOrder.shippingAddress.state}{" "}
+                    {activeInvoiceOrder.shippingAddress.zipCode}
                   </p>
                 </div>
                 <div className="text-right">
                   <p className="text-muted-foreground uppercase">Order Date</p>
-                  <p className="text-foreground text-sm font-bold">{activeInvoiceOrder.date}</p>
-                  <p className="text-muted-foreground uppercase pt-2">Payment Gateway</p>
-                  <p className="text-foreground font-medium">{activeInvoiceOrder.paymentProvider}</p>
+                  <p className="text-foreground text-sm font-bold">
+                    {activeInvoiceOrder.date}
+                  </p>
+                  <p className="text-muted-foreground uppercase pt-2">
+                    Payment Gateway
+                  </p>
+                  <p className="text-foreground font-medium">
+                    {activeInvoiceOrder.paymentProvider}
+                  </p>
                 </div>
               </div>
 
@@ -361,10 +434,25 @@ export const OrderHistoryList: React.FC<OrderHistoryListProps> = ({ orders }) =>
                   <tbody className="divide-y divide-border/40 font-medium">
                     {activeInvoiceOrder.items.map((it) => (
                       <tr key={it.id}>
-                        <td className="p-2.5 font-bold text-foreground">{it.name}</td>
+                        <td className="p-2.5 font-bold text-foreground">
+                          {it.name}
+                        </td>
                         <td className="p-2.5 text-center">{it.quantity}</td>
-                        <td className="p-2.5 text-right">${it.price.toFixed(2)}</td>
-                        <td className="p-2.5 text-right font-bold">${(it.subtotal || it.price * it.quantity).toFixed(2)}</td>
+                        <td className="p-2.5 text-right">
+                          {" "}
+                          {Number(it.price).toLocaleString("en-IN", {
+                            style: "currency",
+                            currency: "INR",
+                          })}
+                        </td>
+                        <td className="p-2.5 text-right font-bold">
+                          {Number(
+                            it.subtotal || it.price * it.quantity,
+                          ).toLocaleString("en-IN", {
+                            style: "currency",
+                            currency: "INR",
+                          })}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -375,7 +463,16 @@ export const OrderHistoryList: React.FC<OrderHistoryListProps> = ({ orders }) =>
                 <div className="w-48 space-y-1 text-xs">
                   <div className="flex justify-between text-muted-foreground">
                     <span>Subtotal:</span>
-                    <span>${activeInvoiceOrder.totalAmount.toFixed(2)}</span>
+                    <span>
+                      {" "}
+                      {Number(activeInvoiceOrder.totalAmount).toLocaleString(
+                        "en-IN",
+                        {
+                          style: "currency",
+                          currency: "INR",
+                        },
+                      )}
+                    </span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
                     <span>Shipping:</span>
@@ -383,7 +480,16 @@ export const OrderHistoryList: React.FC<OrderHistoryListProps> = ({ orders }) =>
                   </div>
                   <div className="flex justify-between text-sm font-extrabold text-foreground pt-2 border-t border-border">
                     <span>Total Paid:</span>
-                    <span>${activeInvoiceOrder.totalAmount.toFixed(2)}</span>
+                    <span>
+                      {" "}
+                      {Number(activeInvoiceOrder.totalAmount).toLocaleString(
+                        "en-IN",
+                        {
+                          style: "currency",
+                          currency: "INR",
+                        },
+                      )}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -393,7 +499,9 @@ export const OrderHistoryList: React.FC<OrderHistoryListProps> = ({ orders }) =>
               <Button
                 className="rounded-lg gap-2"
                 onClick={() => {
-                  toast.success(`Invoice for ${activeInvoiceOrder.orderNumber} downloaded!`);
+                  toast.success(
+                    `Invoice for ${activeInvoiceOrder.orderNumber} downloaded!`,
+                  );
                   setActiveInvoiceOrder(null);
                 }}
               >

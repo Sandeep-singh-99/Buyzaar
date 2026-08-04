@@ -195,3 +195,18 @@ export const useGetTotalProducts = () => {
     refetchOnWindowFocus: false,
   });
 };
+
+
+export const useGetUserTotalOrders = () => {
+  return useQuery({
+    queryKey: ["user-total-orders"],
+    queryFn: async () => {
+      const response = await axiosClient.get("/orders/user-total-orders");
+      return response.data;
+    },
+    staleTime: Infinity,
+    gcTime: 10 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  })
+}

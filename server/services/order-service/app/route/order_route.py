@@ -284,6 +284,16 @@ async def get_total_orders(request: Request, db: Session = Depends(get_db), curr
     total_orders = db.query(Order).count()
     return {"total_orders": total_orders}
 
+
+@router.get("/user-total-orders", summary="Get Total Orders for Current User", description="Retrieve the total number of orders placed by the currently logged-in user.")
+async def get_user_total_orders(request: Request, db: Session = Depends(get_db), current_user: TokenData = Depends(get_current_user)):
+    if not current_user.user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User identity could not be verified from token")
+
+    total_orders = db.query(Order).filter(Order.user_id == current_user.user_id).count()
+    return {"total_orders": total_orders}
+
+
 @router.get(
     "/admin",
     response_model=List[OrderResponse],

@@ -26,11 +26,14 @@ import {
   useGetUserPaymentSummary,
   useGetUserSpendingAnalytics,
 } from "@/api/payment.api";
+import { useGetUserTotalOrders } from "@/api/productApi";
 
 export default function SpendAnalytics() {
   const { data } = useGetUserSpendingAnalytics();
 
   const { data: analyticsData } = useGetUserPaymentSummary();
+
+  const { data: totalOrdersData } = useGetUserTotalOrders();
   return (
     <div className="space-y-6">
       {/* Top Metric Cards Grid */}
@@ -70,7 +73,7 @@ export default function SpendAnalytics() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              {/* {metrics.totalOrders} */}
+              {totalOrdersData?.total_orders}
             </div>
             <p className="text-xs text-muted-foreground font-medium pt-1">
               Across 4 product categories

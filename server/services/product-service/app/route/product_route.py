@@ -8,7 +8,8 @@ from app.model.product import Product, ProductImage
 from shared.cloudinary import delete_image, upload_multiple_images
 from shared.dependencies import get_current_user, TokenData
 from fastapi.encoders import jsonable_encoder
-from app.core.redis import redis_client, CACHE_TTL_SHORT, CACHE_TTL_LONG
+from shared.redis.client import get_redis
+from shared.config import CACHE_TTL_SHORT, CACHE_TTL_LONG
 import json
 import asyncio
 from typing import List
@@ -80,7 +81,7 @@ async def create_product(
         db.refresh(new_product)
 
         # Clear generic caches that might be affected by a new product
-        redis_client.delete("featured_products")
+        get_redis().delete("featured_products")
 
         return {
             "message": "Product created successfully",
@@ -110,7 +111,7 @@ def get_products(
 ):
     # Check Cache First
     cache_key = f"products:cat_{category}:min_{min_price}:max_{max_price}:s_{search}:p_{page}:l_{limit}"
-    cached_data = redis_client.get(cache_key)
+    cached_data = get_redis().get(cache_key)
     if cached_data:
         return json.loads(cached_data)
 
@@ -148,7 +149,7 @@ def get_products(
     response_data = {"total": total, "page": page, "limit": limit, "products": result}
     
     # Save to Cache
-    redis_client.setex(cache_key, CACHE_TTL_SHORT, json.dumps(jsonable_encoder(response_data)))
+    get_redis().setex(cache_key, CACHE_TTL_SHORT, json.dumps(jsonable_encoder(response_data)))
     return response_data
 
 
@@ -156,7 +157,7 @@ def get_products(
 async def get_product_details(product_id: str, db: Session = Depends(get_db)):
     # Check Cache
     cache_key = f"product_details:{product_id}"
-    cached_product = redis_client.get(cache_key)
+    cached_product = get_redis().get(cache_key)
     if cached_product:
         return json.loads(cached_product)
 
@@ -178,7 +179,7 @@ async def get_product_details(product_id: str, db: Session = Depends(get_db)):
     }
 
     # Save to Cache
-    redis_client.setex(cache_key, CACHE_TTL_LONG, json.dumps(jsonable_encoder(response_data)))
+    get_redis().setex(cache_key, CACHE_TTL_LONG, json.dumps(jsonable_encoder(response_data)))
     return response_data
 
 
@@ -198,8 +199,8 @@ async def delete_product(product_id: str, db: Session = Depends(get_db), current
     db.commit()
 
     # Invalidate Cache
-    redis_client.delete(f"product_details:{product_id}")
-    redis_client.delete("featured_products")
+    get_redis().delete(f"product_details:{product_id}")
+    get_redis().delete("featured_products")
 
     return {"message": "Product deleted successfully"}
 
@@ -272,8 +273,8 @@ async def update_product(
     }
 
     # Invalidate Cache and set new data
-    redis_client.setex(f"product_details:{product_id}", CACHE_TTL_LONG, json.dumps(jsonable_encoder(response_data)))
-    redis_client.delete("featured_products")
+    get_redis().setex(f"product_details:{product_id}", CACHE_TTL_LONG, json.dumps(jsonable_encoder(response_data)))
+    get_redis().delete("featured_products")
 
     return response_data
 
@@ -281,7 +282,7 @@ async def update_product(
 def get_featured_products(db: Session = Depends(get_db)):
     # Check Cache
     cache_key = "featured_products"
-    cached_data = redis_client.get(cache_key)
+    cached_data = get_redis().get(cache_key)
     if cached_data:
         return json.loads(cached_data)
 
@@ -302,14 +303,14 @@ def get_featured_products(db: Session = Depends(get_db)):
             
     response_data = {"products": result}
     # Save to Cache
-    redis_client.setex(cache_key, CACHE_TTL_LONG, json.dumps(jsonable_encoder(response_data)))
+    get_redis().setex(cache_key, CACHE_TTL_LONG, json.dumps(jsonable_encoder(response_data)))
     return response_data
 
 
 @router.get("/get-related-products/{product_id}")
 def get_related_products(product_id: str, db: Session = Depends(get_db)):
     cache_key = f"related_products:{product_id}"
-    cached_data = redis_client.get(cache_key)
+    cached_data = get_redis().get(cache_key)
     if cached_data:
         return json.loads(cached_data)
 
@@ -334,7 +335,7 @@ def get_related_products(product_id: str, db: Session = Depends(get_db)):
         })
         
     response_data = {"products": result}
-    redis_client.setex(cache_key, CACHE_TTL_SHORT, json.dumps(jsonable_encoder(response_data)))
+    get_redis().setex(cache_key, CACHE_TTL_SHORT, json.dumps(jsonable_encoder(response_data)))
     return response_data
 
 
@@ -346,7 +347,7 @@ def get_products_by_category(
     db: Session = Depends(get_db)
 ):
     cache_key = f"category_products:{category_name}:p_{page}:l_{limit}"
-    cached_data = redis_client.get(cache_key)
+    cached_data = get_redis().get(cache_key)
     if cached_data:
         return json.loads(cached_data)
 
@@ -375,14 +376,14 @@ def get_products_by_category(
         })
         
     response_data = {"total": total, "page": page, "limit": limit, "products": result}
-    redis_client.setex(cache_key, CACHE_TTL_SHORT, json.dumps(jsonable_encoder(response_data)))
+    get_redis().setex(cache_key, CACHE_TTL_SHORT, json.dumps(jsonable_encoder(response_data)))
     return response_data
 
 
 @router.get("/find-product/{product_id}")
 async def find_product(product_id: str, db: Session = Depends(get_db)):
     cache_key = f"find_product:{product_id}"
-    cached_data = redis_client.get(cache_key)
+    cached_data = get_redis().get(cache_key)
     if cached_data:
         return json.loads(cached_data)
 
@@ -399,7 +400,7 @@ async def find_product(product_id: str, db: Session = Depends(get_db)):
         "images": [{"url": img.image_url, "is_primary": img.is_primary} for img in product.images]
     }
     
-    redis_client.setex(cache_key, CACHE_TTL_LONG, json.dumps(jsonable_encoder(response_data)))
+    get_redis().setex(cache_key, CACHE_TTL_LONG, json.dumps(jsonable_encoder(response_data)))
     return response_data
     
 
@@ -409,7 +410,7 @@ async def find_products(product_ids: List[str], db: Session = Depends(get_db)):
     sorted_ids_str = ",".join(sorted(product_ids))
     cache_key = f"find_products_batch:{sorted_ids_str}"
     
-    cached_data = redis_client.get(cache_key)
+    cached_data = get_redis().get(cache_key)
     if cached_data:
         return json.loads(cached_data)
 
@@ -428,7 +429,7 @@ async def find_products(product_ids: List[str], db: Session = Depends(get_db)):
         })
 
     response_data = {"products": result}
-    redis_client.setex(cache_key, CACHE_TTL_SHORT, json.dumps(jsonable_encoder(response_data)))
+    get_redis().setex(cache_key, CACHE_TTL_SHORT, json.dumps(jsonable_encoder(response_data)))
     return response_data
 
 @router.get("/total-products")

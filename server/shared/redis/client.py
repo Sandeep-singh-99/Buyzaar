@@ -10,7 +10,7 @@ redis_client = redis.Redis(
     port=os.getenv("REDIS_PORT"),
     username=os.getenv("REDIS_USER"),
     password=os.getenv("REDIS_PASSWORD"),
-    decode_responses=True
+    decode_responses=True,
 )
 
 def get_redis():
@@ -22,4 +22,4 @@ def check_connection():
         logger.info("Connected to Redis successfully.")
     except redis.ConnectionError as e:
         logger.error(f"Failed to connect to Redis: {e}")
-        raise e
+        raise 

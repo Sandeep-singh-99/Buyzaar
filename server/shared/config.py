@@ -12,3 +12,6 @@ ACCESS_TOKEN_EXPIRE_DAYS = 7
 CACHE_TTL_SHORT = 300   # 5 minutes for lists (search, category views)
 CACHE_TTL_LONG = 3600   # 1 hour for specific product details
 CACHE_TTL_CART = 1800  # 30 minutes for cart data
+
+CACHE_TTL_REVIEWS = 1800  # 30 minutes
+CACHE_TTL_RATING = 3600   # 1 hour

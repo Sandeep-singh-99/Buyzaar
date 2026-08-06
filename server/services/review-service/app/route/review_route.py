@@ -6,7 +6,8 @@ from app.db.db import get_db
 from app.schema.review_schema import CreateReview, ReviewResponse, ReviewDelete, ReviewListResponse, ReviewUpdate, ProductRatingResponse, RatingBreakdown
 from app.model.review import Comment
 from shared.dependencies import get_current_user, TokenData
-from app.core.redis import redis_client, CACHE_TTL_REVIEWS, CACHE_TTL_RATING
+from shared.redis.client import get_redis
+from shared.config import CACHE_TTL_REVIEWS, CACHE_TTL_RATING
 from fastapi.encoders import jsonable_encoder
 import json
 
@@ -78,11 +79,11 @@ async def create_rating(
     db.refresh(new_review)
     
     # INVALIDATE CACHE: Delete the overall rating cache for this product
-    redis_client.delete(f"rating:{product_id}")
+    get_redis().delete(f"rating:{product_id}")
     
     # INVALIDATE CACHE: Delete all paginated review pages for this product
-    for key in redis_client.scan_iter(f"reviews:{product_id}:*"):
-        redis_client.delete(key)
+    for key in get_redis().scan_iter(f"reviews:{product_id}:*"):
+        get_redis().delete(key)
     
     return ReviewResponse(
         id=new_review.id,
@@ -127,7 +128,7 @@ async def get_all_comments(
 ):
     # 1. Check Redis Cache
     cache_key = f"reviews:{product_id}:s_{skip}:l_{limit}"
-    cached_reviews = redis_client.get(cache_key)
+    cached_reviews = get_redis().get(cache_key)
     
     if cached_reviews:
         return json.loads(cached_reviews)
@@ -150,7 +151,7 @@ async def get_all_comments(
     response_data = ReviewListResponse(reviews=response_reviews)
     
     # 3. Save to Cache
-    redis_client.setex(cache_key, CACHE_TTL_REVIEWS, json.dumps(jsonable_encoder(response_data)))
+    get_redis().setex(cache_key, CACHE_TTL_REVIEWS, json.dumps(jsonable_encoder(response_data)))
     
     return response_data
 
@@ -199,7 +200,7 @@ async def get_product_rating(
 ):
     # 1. Check Redis Cache
     cache_key = f"rating:{product_id}"
-    cached_rating = redis_client.get(cache_key)
+    cached_rating = get_redis().get(cache_key)
     
     if cached_rating:
         return json.loads(cached_rating)
@@ -238,6 +239,6 @@ async def get_product_rating(
         )
         
     # 3. Save to Cache
-    redis_client.setex(cache_key, CACHE_TTL_RATING, json.dumps(jsonable_encoder(response_data)))
+    get_redis().setex(cache_key, CACHE_TTL_RATING, json.dumps(jsonable_encoder(response_data)))
     
     return response_data

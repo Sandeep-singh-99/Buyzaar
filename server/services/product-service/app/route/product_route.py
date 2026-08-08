@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, status, UploadFile, status, Request, File, Form, Query
 from typing import Optional, List
+from sqlalchemy import or_
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.exc import IntegrityError
 from fastapi.concurrency import run_in_threadpool
@@ -342,20 +343,45 @@ def get_related_products(product_id: str, db: Session = Depends(get_db)):
 @router.get("/get-products-by-category/{category_name}")
 def get_products_by_category(
     category_name: str,
+    categories: Optional[str] = Query(None),
+    min_price: Optional[float] = Query(None, ge=0),
+    max_price: Optional[float] = Query(None, ge=0),
+    sort_by: Optional[str] = Query("featured"),
     page: int = Query(1, ge=1),
     limit: int = Query(8, le=100),
     db: Session = Depends(get_db)
 ):
-    cache_key = f"category_products:{category_name}:p_{page}:l_{limit}"
+    cache_key = f"category_products:{category_name}:cats_{categories}:min_{min_price}:max_{max_price}:s_{sort_by}:p_{page}:l_{limit}"
     cached_data = get_redis().get(cache_key)
     if cached_data:
         return json.loads(cached_data)
 
     query = db.query(Product).options(selectinload(Product.images))
     
-    if category_name.lower() not in ["all", "view-all", "view all"]:
-        query = query.filter(Product.product_category.ilike(category_name))
-        
+    # 1. Categories Filter
+    cat_list = [c.strip() for c in categories.split(",") if c.strip()] if categories else []
+    if cat_list:
+        category_filters = [Product.product_category.ilike(f"%{c}%") for c in cat_list]
+        query = query.filter(or_(*category_filters))
+    elif category_name.lower() not in ["all", "view-all", "view all"]:
+        query = query.filter(Product.product_category.ilike(f"%{category_name}%"))
+
+    # 2. Price Range Filter
+    if min_price is not None:
+        query = query.filter(Product.sales_price >= min_price)
+    if max_price is not None:
+        query = query.filter(Product.sales_price <= max_price)
+
+    # 3. Sorting
+    if sort_by == "price-asc":
+        query = query.order_by(Product.sales_price.asc())
+    elif sort_by == "price-desc":
+        query = query.order_by(Product.sales_price.desc())
+    elif sort_by == "newest":
+        query = query.order_by(Product.created_at.desc())
+    else:  # "featured" or default
+        query = query.order_by(Product.created_at.desc())
+
     total = query.count()
     skip = (page - 1) * limit
     products = query.offset(skip).limit(limit).all()

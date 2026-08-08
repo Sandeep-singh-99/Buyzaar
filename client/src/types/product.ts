@@ -41,8 +41,10 @@ export interface IProducts {
 
 export interface ProductQueryParams {
   category?: string;
+  categories?: string;
   min_price?: number;
   max_price?: number;
+  sort_by?: string;
   search?: string;
   page?: number;
   limit?: number;

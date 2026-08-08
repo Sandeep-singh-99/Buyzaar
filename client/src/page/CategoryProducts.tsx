@@ -39,9 +39,54 @@ export default function CategoryProducts() {
   const [sortBy, setSortBy] = useState("featured");
   const [page, setPage] = useState(1);
 
+  // Selected filter controls state
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 2000]);
+
+  // Applied filters state (sent to query)
+  const [appliedFilters, setAppliedFilters] = useState<{
+    categories: string[];
+    minPrice: number;
+    maxPrice: number;
+  }>({
+    categories: [],
+    minPrice: 0,
+    maxPrice: 2000,
+  });
+
   useEffect(() => {
     setPage(1);
+    const initialCats = slug && slug !== "all" && slug !== "view-all" ? [slug] : [];
+    setSelectedCategories(initialCats);
+    setAppliedFilters({
+      categories: initialCats,
+      minPrice: 0,
+      maxPrice: 2000,
+    });
   }, [slug]);
+
+  const handleCategoryToggle = (categorySlug: string, checked: boolean) => {
+    setSelectedCategories((prev) => {
+      const lowerSlug = categorySlug.toLowerCase();
+      if (checked) {
+        if (!prev.map((c) => c.toLowerCase()).includes(lowerSlug)) {
+          return [...prev, categorySlug];
+        }
+        return prev;
+      } else {
+        return prev.filter((item) => item.toLowerCase() !== lowerSlug);
+      }
+    });
+  };
+
+  const handleApplyFilters = () => {
+    setPage(1);
+    setAppliedFilters({
+      categories: selectedCategories,
+      minPrice: priceRange[0],
+      maxPrice: priceRange[1],
+    });
+  };
 
   const categoryName = slug === "all" || slug === "view-all" 
     ? "All Products" 
@@ -52,10 +97,16 @@ export default function CategoryProducts() {
     image: "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?q=80&w=2070&auto=format&fit=crop",
   };
 
-  const { data, isLoading } = useGetProductsByCategory(slug || "all", {
+  const queryParams = {
     page: page,
     limit: 8,
-  });
+    sort_by: sortBy,
+    categories: appliedFilters.categories.length > 0 ? appliedFilters.categories.join(",") : undefined,
+    min_price: appliedFilters.minPrice > 0 ? appliedFilters.minPrice : undefined,
+    max_price: appliedFilters.maxPrice < 2000 ? appliedFilters.maxPrice : undefined,
+  };
+
+  const { data, isLoading } = useGetProductsByCategory(slug || "all", queryParams);
   const displayProducts = data?.products || [];
   const totalPages = data ? Math.ceil(data.total / 8) : 1;
 
@@ -64,6 +115,14 @@ export default function CategoryProducts() {
       setPage(newPage);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
+  };
+
+  const filterSidebarProps = {
+    selectedCategories,
+    onCategoryToggle: handleCategoryToggle,
+    priceRange,
+    onPriceRangeChange: setPriceRange,
+    onApplyFilters: handleApplyFilters,
   };
 
 
@@ -118,14 +177,14 @@ export default function CategoryProducts() {
                     Refine your product search
                   </SheetDescription>
                 </SheetHeader>
-                <FilterSidebar />
+                <FilterSidebar {...filterSidebarProps} />
               </SheetContent>
             </Sheet>
 
             <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
               <div className="flex items-center gap-2 w-full md:w-auto mt-2 md:mt-0">
                 <SlidersHorizontal className="h-4 w-4 hidden md:block text-muted-foreground" />
-                <Select value={sortBy} onValueChange={setSortBy}>
+                <Select value={sortBy} onValueChange={(val) => { setSortBy(val); setPage(1); }}>
                   <SelectTrigger className="w-full md:w-[150px]">
                     <SelectValue placeholder="Sort by" />
                   </SelectTrigger>
@@ -134,7 +193,6 @@ export default function CategoryProducts() {
                     <SelectItem value="newest">Newest Arrivals</SelectItem>
                     <SelectItem value="price-asc">Price: Low to High</SelectItem>
                     <SelectItem value="price-desc">Price: High to Low</SelectItem>
-                    <SelectItem value="rating">Top Rated</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -146,7 +204,7 @@ export default function CategoryProducts() {
           {/* Desktop Sidebar */}
           <aside className="hidden md:block w-64 shrink-0">
             <div className="sticky top-28">
-              <FilterSidebar />
+              <FilterSidebar {...filterSidebarProps} />
             </div>
           </aside>
 

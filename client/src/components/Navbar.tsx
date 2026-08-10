@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   Search,
@@ -6,15 +6,14 @@ import {
   User,
   LogOut,
   LayoutDashboard,
-  Settings,
 } from "lucide-react";
 import { ModeToggle } from "./mode-toggle";
+import { SearchModal } from "./SearchModal";
 import { useAppSelector, useAppDispatch } from "@/hooks/hooks";
 import { useSignOut } from "@/api/authApi";
 import { useFetchCartProducts } from "@/api/cartApi";
 import { logout } from "@/redux/slice/authSlice";
 import { Button } from "./ui/button";
-import { Input } from "./ui/input";
 import { Badge } from "./ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 
@@ -33,6 +32,18 @@ export default function Navbar() {
   const dispatch = useAppDispatch();
   const { mutateAsync: signOut } = useSignOut();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  // Keyboard shortcut (⌘K or Ctrl+K) to open search modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setIsSearchOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   // Sync cart data with redux if user is logged in
   useFetchCartProducts(!!user);
@@ -58,29 +69,37 @@ export default function Navbar() {
 
         {/* Right Actions */}
         <div className="flex items-center gap-2 sm:gap-4">
-          {/* Desktop Search */}
-          <div
-            className={`hidden md:flex items-center transition-all overflow-hidden ${isSearchOpen ? "w-64" : "w-10"}`}
+          {/* Desktop Search Trigger Pill */}
+          <button
+            type="button"
+            onClick={() => setIsSearchOpen(true)}
+            className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full border border-border/60 bg-muted/40 hover:bg-muted/80 text-muted-foreground hover:text-foreground text-xs font-medium transition-all shadow-2xs group cursor-pointer"
+            title="Search products (⌘K)"
           >
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`shrink-0 z-10 ${isSearchOpen ? "absolute" : ""}`}
-              onClick={() => setIsSearchOpen(!isSearchOpen)}
-            >
-              <Search className="h-5 w-5" />
-            </Button>
-            {isSearchOpen && (
-              <Input
-                autoFocus
-                placeholder="Search products..."
-                className="pl-10 h-10 w-full animate-in slide-in-from-right-4 bg-background/50"
-                onBlur={() => setIsSearchOpen(false)}
-              />
-            )}
-          </div>
+            <Search className="h-3.5 w-3.5 text-primary group-hover:scale-110 transition-transform" />
+            <span>Search products...</span>
+            <kbd className="hidden lg:inline-flex items-center pointer-events-none h-4 select-none rounded border border-border/70 bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground shadow-2xs">
+              ⌘K
+            </kbd>
+          </button>
+
+          {/* Mobile Icon Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsSearchOpen(true)}
+            className="sm:hidden relative hover:bg-accent/60"
+            title="Search products"
+          >
+            <Search className="h-5 w-5" />
+            <span className="sr-only">Search products</span>
+          </Button>
+
+          {/* Search Modal */}
+          <SearchModal open={isSearchOpen} onOpenChange={setIsSearchOpen} />
 
           <ModeToggle />
+
 
           <Link to="/cart">
             <Button variant="ghost" size="icon" className="relative">

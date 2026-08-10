@@ -208,5 +208,29 @@ export const useGetUserTotalOrders = () => {
     gcTime: 10 * 60 * 1000,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
-  })
-}
+  });
+};
+
+export const useSearchProducts = ({
+  q,
+  category,
+  enabled = true,
+}: {
+  q?: string;
+  category?: string;
+  enabled?: boolean;
+} = {}) => {
+  return useQuery<IProducts, AxiosError<ApiErrorResponse>>({
+    queryKey: ["search-products", q, category],
+    queryFn: async () => {
+      const response = await axiosClient.get("/api/products/search", {
+        params: { q, category },
+      });
+      return response.data;
+    },
+    enabled: enabled && (!!q?.trim() || (!!category?.trim() && category !== "All")),
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+};

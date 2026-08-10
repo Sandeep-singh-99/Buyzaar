@@ -183,28 +183,6 @@ async def get_product_details(product_id: str, db: Session = Depends(get_db)):
     get_redis().setex(cache_key, CACHE_TTL_LONG, json.dumps(jsonable_encoder(response_data)))
     return response_data
 
-
-@router.delete("/delete-product/{product_id}")
-async def delete_product(product_id: str, db: Session = Depends(get_db), current_user: TokenData = Depends(get_current_user)):
-    if current_user.role != "ADMIN":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
-
-    product = db.query(Product).options(selectinload(Product.images)).filter(Product.id == product_id).first()
-    if not product:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
-
-    delete_tasks = [run_in_threadpool(delete_image, img.public_id) for img in product.images]
-    await asyncio.gather(*delete_tasks, return_exceptions=True)
-
-    db.delete(product)
-    db.commit()
-
-    # Invalidate Cache
-    get_redis().delete(f"product_details:{product_id}")
-    get_redis().delete("featured_products")
-
-    return {"message": "Product deleted successfully"}
-
 @router.patch("/update-product/{product_id}")
 async def update_product(
     product_id: str,
@@ -514,4 +492,26 @@ def search_products(
 
     response_data = {"products": result, "total": len(result)}
     get_redis().setex(cache_key, CACHE_TTL_SHORT, json.dumps(jsonable_encoder(response_data)))
-    return response_data
+    return response_data
+
+
+@router.delete("/delete-product/{product_id}")
+async def delete_product(product_id: str, db: Session = Depends(get_db), current_user: TokenData = Depends(get_current_user)):
+    if current_user.role != "ADMIN":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+
+    product = db.query(Product).options(selectinload(Product.images)).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+
+    delete_tasks = [run_in_threadpool(delete_image, img.public_id) for img in product.images]
+    await asyncio.gather(*delete_tasks, return_exceptions=True)
+
+    db.delete(product)
+    db.commit()
+
+    # Invalidate Cache
+    get_redis().delete(f"product_details:{product_id}")
+    get_redis().delete("featured_products")
+
+    return {"message": "Product deleted successfully"}

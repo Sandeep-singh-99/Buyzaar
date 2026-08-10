@@ -1,11 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  CreditCard,
-  Truck,
-  ShieldCheck,
-  Loader2,
-} from "lucide-react";
+import { CreditCard, Truck, ShieldCheck, Loader2 } from "lucide-react";
 
 import { useAppSelector } from "@/hooks/hooks";
 import { useCheckout } from "@/api/payment.api";
@@ -16,18 +11,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const getImageUrl = (product: any) => {
   if (product?.image?.url) return product.image.url;
-  if (typeof product?.image === 'string') return product.image;
+  if (typeof product?.image === "string") return product.image;
   if (Array.isArray(product?.images) && product.images.length > 0) {
     const first = product.images[0];
-    if (typeof first === 'string') return first;
+    if (typeof first === "string") return first;
     if (first?.url) return first.url;
     if (first?.image_url) return first.image_url;
   }
-  return '/placeholder.png';
+  return "/placeholder.png";
 };
 
 const getItemPrice = (product: any) => {
@@ -59,8 +60,9 @@ export default function Checkout() {
   };
 
   const subtotal = (items || []).reduce(
-    (total, item) => total + getItemPrice(item?.product) * (item?.quantity || 1),
-    0
+    (total, item) =>
+      total + getItemPrice(item?.product) * (item?.quantity || 1),
+    0,
   );
   const shipping = subtotal > 1000 ? 0 : 99.0;
   const tax = subtotal * 0.18;
@@ -106,13 +108,17 @@ export default function Checkout() {
     <div className="container mx-auto px-4 md:px-10 py-8">
       <h1 className="text-3xl font-bold tracking-tight mb-8">Checkout</h1>
 
-      <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <form
+        onSubmit={handlePlaceOrder}
+        className="grid grid-cols-1 lg:grid-cols-3 gap-8"
+      >
         <div className="lg:col-span-2 space-y-8">
           {/* Shipping Address */}
           <Card className="border-border/50 shadow-sm">
             <CardHeader className="bg-muted/20 border-b border-border/50">
               <CardTitle className="text-lg flex items-center gap-2">
-                <Truck className="h-5 w-5 text-violet-500" /> Shipping Information
+                <Truck className="h-5 w-5 text-violet-500" /> Shipping
+                Information
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-4">
@@ -129,7 +135,10 @@ export default function Checkout() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="country">Country</Label>
-                  <Select value={formData.country} onValueChange={handleCountryChange}>
+                  <Select
+                    value={formData.country}
+                    onValueChange={handleCountryChange}
+                  >
                     <SelectTrigger id="country" className="w-full">
                       <SelectValue placeholder="Select country" />
                     </SelectTrigger>
@@ -228,7 +237,8 @@ export default function Checkout() {
           <Card className="border-border/50 shadow-sm">
             <CardHeader className="bg-muted/20 border-b border-border/50">
               <CardTitle className="text-lg flex items-center gap-2">
-                <CreditCard className="h-5 w-5 text-violet-500" /> Payment Gateway
+                <CreditCard className="h-5 w-5 text-violet-500" /> Payment
+                Gateway
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
@@ -237,9 +247,12 @@ export default function Checkout() {
                   <ShieldCheck className="h-6 w-6" />
                 </div>
                 <div>
-                  <h4 className="font-semibold text-base">Cashfree Payment Gateway</h4>
+                  <h4 className="font-semibold text-base">
+                    Cashfree Payment Gateway
+                  </h4>
                   <p className="text-sm text-muted-foreground">
-                    You will be securely redirected to Cashfree to complete payment via UPI, Credit/Debit Cards, NetBanking, or Wallets.
+                    You will be securely redirected to Cashfree to complete
+                    payment via UPI, Credit/Debit Cards, NetBanking, or Wallets.
                   </p>
                 </div>
               </div>
@@ -260,16 +273,30 @@ export default function Checkout() {
                   const imageUrl = getImageUrl(item?.product);
                   const name = item?.product?.name || "Product";
                   return (
-                    <div key={item.id || item?.product?.id} className="flex gap-4">
+                    <div
+                      key={item.id || item?.product?.id}
+                      className="flex gap-4"
+                    >
                       <div className="w-16 h-16 rounded overflow-hidden bg-muted/20 shrink-0 border border-border">
-                        <img src={imageUrl} alt={name} className="w-full h-full object-cover" />
+                        <img
+                          src={imageUrl}
+                          alt={name}
+                          className="w-full h-full object-cover"
+                        />
                       </div>
                       <div className="flex-1 text-sm">
-                        <h4 className="font-medium line-clamp-2 mb-1">{name}</h4>
-                        <p className="text-muted-foreground">Qty: {item.quantity}</p>
+                        <h4 className="font-medium line-clamp-2 mb-1">
+                          {name}
+                        </h4>
+                        <p className="text-muted-foreground">
+                          Qty: {item.quantity}
+                        </p>
                       </div>
                       <div className="font-medium text-sm">
-                        ₹{(price * item.quantity).toFixed(2)}
+                        {Number(price * item.quantity).toLocaleString("en-IN", {
+                          style: "currency",
+                          currency: "INR",
+                        })}
                       </div>
                     </div>
                   );
@@ -281,11 +308,21 @@ export default function Checkout() {
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between text-muted-foreground">
                   <span>Subtotal</span>
-                  <span>₹{subtotal.toFixed(2)}</span>
+                  <span>
+                    {Number(subtotal).toLocaleString("en-IN", {
+                      style: "currency",
+                      currency: "INR",
+                    })}
+                  </span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>GST / Tax (18%)</span>
-                  <span>₹{tax.toFixed(2)}</span>
+                  <span>
+                    {Number(tax).toLocaleString("en-IN", {
+                      style: "currency",
+                      currency: "INR",
+                    })}
+                  </span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>Shipping</span>
@@ -301,7 +338,12 @@ export default function Checkout() {
 
               <div className="flex justify-between font-bold text-xl mb-6">
                 <span>Total</span>
-                <span>₹{total.toFixed(2)}</span>
+                <span>
+                  {Number(total).toLocaleString("en-IN", {
+                    style: "currency",
+                    currency: "INR",
+                  })}
+                </span>
               </div>
 
               <Button
@@ -321,7 +363,8 @@ export default function Checkout() {
               </Button>
 
               <div className="mt-4 flex items-center justify-center text-xs text-muted-foreground gap-1">
-                <ShieldCheck className="h-4 w-4" /> Encrypted & Secure Cashfree Payment
+                <ShieldCheck className="h-4 w-4" /> Encrypted & Secure Cashfree
+                Payment
               </div>
             </CardContent>
           </Card>

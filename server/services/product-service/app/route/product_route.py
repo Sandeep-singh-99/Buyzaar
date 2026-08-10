@@ -465,3 +465,53 @@ async def get_total_products(request: Request, db: Session = Depends(get_db), cu
 
     total_products = db.query(Product).count()
     return {"total_products": total_products}
+
+
+@router.get("/search")
+def search_products(
+    q: Optional[str] = Query(None),
+    category: Optional[str] = Query(None),
+    limit: int = Query(20, le=100),
+    db: Session = Depends(get_db)
+):
+    cache_key = f"search_products:q_{q}:cat_{category}:l_{limit}"
+    cached_data = get_redis().get(cache_key)
+    if cached_data:
+        return json.loads(cached_data)
+
+    query = db.query(Product).options(selectinload(Product.images))
+
+    if q and q.strip():
+        search_pattern = f"%{q.strip()}%"
+        query = query.filter(
+            or_(
+                Product.product_name.ilike(search_pattern),
+                Product.product_brand.ilike(search_pattern),
+                Product.product_description.ilike(search_pattern),
+                Product.product_category.ilike(search_pattern)
+            )
+        )
+
+    if category and category.strip() and category.strip().lower() not in ["all", "all categories"]:
+        query = query.filter(Product.product_category.ilike(f"%{category.strip()}%"))
+
+    products = query.limit(limit).all()
+
+    result = []
+    for product in products:
+        result.append({
+            "id": product.id,
+            "name": product.product_name,
+            "brand": product.product_brand,
+            "price": product.product_price,
+            "sales_price": product.sales_price,
+            "category": product.product_category,
+            "description": product.product_description,
+            "details": product.product_details,
+            "images": [{"url": img.image_url, "is_primary": img.is_primary} for img in product.images],
+            "created_at": product.created_at
+        })
+
+    response_data = {"products": result, "total": len(result)}
+    get_redis().setex(cache_key, CACHE_TTL_SHORT, json.dumps(jsonable_encoder(response_data)))
+    return response_data

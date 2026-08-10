@@ -22,7 +22,8 @@ export function CartItemCard({ item }: { item: ICartItem }) {
     deleteItem(product.id);
   };
 
-  const imageUrl = product.image?.url || product.images?.[0]?.url || "/placeholder.png";
+  const imageUrl =
+    product.image?.url || product.images?.[0]?.url || "/placeholder.png";
 
   return (
     <div className="flex gap-4 py-4 border-b border-border last:border-0">
@@ -35,7 +36,7 @@ export function CartItemCard({ item }: { item: ICartItem }) {
           />
         </div>
       </Link>
-      
+
       <div className="flex flex-col flex-grow justify-between py-1">
         <div className="flex justify-between items-start gap-4">
           <div>
@@ -49,21 +50,38 @@ export function CartItemCard({ item }: { item: ICartItem }) {
             </Link>
           </div>
           <div className="text-right">
-            <div className="font-bold text-lg sm:text-xl">${Number(product.sales_price || product.price || 0).toFixed(2)}</div>
-            {(product.sales_price && product.price && product.sales_price < product.price) && (
-              <div className="text-sm text-muted-foreground line-through">
-                ${Number(product.price).toFixed(2)}
-              </div>
-            )}
+            <div className="font-bold text-lg sm:text-xl">
+              {Number(product.sales_price).toLocaleString("en-IN", {
+                style: "currency",
+                currency: "INR",
+              })}
+            </div>
+            {product.sales_price &&
+              product.price &&
+              product.sales_price < product.price && (
+                <div className="text-sm text-muted-foreground line-through">
+                  {Number(product.price).toLocaleString("en-IN", {
+                    style: "currency",
+                    currency: "INR",
+                  })}
+                </div>
+              )}
           </div>
         </div>
 
         <div className="flex justify-between items-end mt-4">
-          <QuantitySelector quantity={quantity} onChange={handleQuantityChange} />
-          
+          <QuantitySelector
+            quantity={quantity}
+            onChange={handleQuantityChange}
+          />
+
           <div className="flex items-center gap-4">
             <span className="font-semibold hidden sm:inline-block">
-              Total: ${(Number(product.sales_price || product.price || 0) * quantity).toFixed(2)}
+              Total:{" "}
+              {Number(product.sales_price).toLocaleString("en-IN", {
+                style: "currency",
+                currency: "INR",
+              })}
             </span>
             <Button
               variant="ghost"
@@ -72,7 +90,9 @@ export function CartItemCard({ item }: { item: ICartItem }) {
               onClick={handleRemove}
               disabled={isDeleting}
             >
-              <Trash2 className={`h-5 w-5 ${isDeleting ? "animate-pulse" : ""}`} />
+              <Trash2
+                className={`h-5 w-5 ${isDeleting ? "animate-pulse" : ""}`}
+              />
             </Button>
           </div>
         </div>

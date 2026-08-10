@@ -17,9 +17,12 @@ import { QuantitySelector } from "@/components/QuantitySelector";
 import { useAddToCart } from "@/api/cartApi";
 import MDEditor from "@uiw/react-md-editor";
 
-
 import { useGetProductById, useGetRelatedProducts } from "@/api/productApi";
-import { useGetProductRating, useGetProductComments, useCreateReview } from "@/api/reviewApi";
+import {
+  useGetProductRating,
+  useGetProductComments,
+  useCreateReview,
+} from "@/api/reviewApi";
 import { useTheme } from "@/components/theme-provider";
 import { ProductDetailSkeleton } from "@/components/skeleton/ProductDetailSkeleton";
 import { ProductCardSkeleton } from "@/components/skeleton/ProductCardSkeleton";
@@ -31,14 +34,16 @@ export default function ProductDetail() {
 
   const [activeImage, setActiveImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
-  const { mutate: addToCartMutation, isPending: isAddingToCart } = useAddToCart();
+  const { mutate: addToCartMutation, isPending: isAddingToCart } =
+    useAddToCart();
 
   const { data: product, isLoading } = useGetProductById(id as string);
   const { data: relatedData } = useGetRelatedProducts(id as string);
   const { data: ratingData } = useGetProductRating(id as string);
   const { data: commentsData } = useGetProductComments(id as string);
-  const { mutate: submitReview, isPending: isSubmittingReview } = useCreateReview();
-  
+  const { mutate: submitReview, isPending: isSubmittingReview } =
+    useCreateReview();
+
   const relatedProducts = relatedData?.products || [];
   const { theme } = useTheme();
 
@@ -48,12 +53,15 @@ export default function ProductDetail() {
   const handleReviewSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!id) return;
-    submitReview({ productId: id, rating: reviewRating, comment: reviewComment }, {
-      onSuccess: () => {
-        setReviewComment("");
-        setReviewRating(5);
-      }
-    });
+    submitReview(
+      { productId: id, rating: reviewRating, comment: reviewComment },
+      {
+        onSuccess: () => {
+          setReviewComment("");
+          setReviewRating(5);
+        },
+      },
+    );
   };
 
   const resolvedTheme =
@@ -160,17 +168,22 @@ export default function ProductDetail() {
 
           <div className="flex items-end gap-3 mb-6">
             <span className="text-4xl font-bold">
-              ${(product.sales_price || product.price).toFixed(2)}
+              {Number(product.sales_price).toLocaleString("en-IN", {
+                style: "currency",
+                currency: "INR",
+              })}
             </span>
             {product.sales_price && product.sales_price < product.price && (
               <>
                 <span className="text-xl text-muted-foreground line-through mb-1">
-                  ${product.price.toFixed(2)}
+                  {Number(product.price).toLocaleString("en-IN", {
+                    style: "currency",
+                    currency: "INR",
+                  })}
                 </span>
                 <Badge variant="destructive" className="mb-2 h-6">
                   {Math.round(
-                    ((product.price - product.sales_price) /
-                      product.price) *
+                    ((product.price - product.sales_price) / product.price) *
                       100,
                   )}
                   % OFF
@@ -201,7 +214,7 @@ export default function ProductDetail() {
                 onClick={handleAddToCart}
                 disabled={isAddingToCart}
               >
-                <ShoppingCart className="mr-2 h-5 w-5" /> 
+                <ShoppingCart className="mr-2 h-5 w-5" />
                 {isAddingToCart ? "Adding..." : "Add to Cart"}
               </Button>
             </div>
@@ -256,9 +269,13 @@ export default function ProductDetail() {
             className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground"
           >
             <div data-color-mode={resolvedTheme}>
-              <MDEditor.Markdown 
-                source={product?.details || product?.description || "No details available."} 
-                style={{ backgroundColor: 'transparent' }}
+              <MDEditor.Markdown
+                source={
+                  product?.details ||
+                  product?.description ||
+                  "No details available."
+                }
+                style={{ backgroundColor: "transparent" }}
               />
             </div>
           </TabsContent>
@@ -268,7 +285,9 @@ export default function ProductDetail() {
               <div className="md:col-span-1 border border-border p-6 rounded-2xl bg-card h-fit">
                 <h3 className="font-semibold text-lg mb-4">Customer Reviews</h3>
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="text-5xl font-bold">{ratingData?.average_rating || 0}</div>
+                  <div className="text-5xl font-bold">
+                    {ratingData?.average_rating || 0}
+                  </div>
                   <div className="flex flex-col gap-1">
                     <RatingStars rating={ratingData?.average_rating || 0} />
                     <span className="text-sm text-muted-foreground">
@@ -300,8 +319,10 @@ export default function ProductDetail() {
                 <h3 className="font-semibold text-lg mb-4">Write a Review</h3>
                 <form onSubmit={handleReviewSubmit} className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Rating</label>
-                    <select 
+                    <label className="text-sm font-medium mb-2 block">
+                      Rating
+                    </label>
+                    <select
                       className="w-full bg-background border border-input rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                       value={reviewRating}
                       onChange={(e) => setReviewRating(Number(e.target.value))}
@@ -314,8 +335,10 @@ export default function ProductDetail() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Comment</label>
-                    <textarea 
+                    <label className="text-sm font-medium mb-2 block">
+                      Comment
+                    </label>
+                    <textarea
                       className="w-full bg-background border border-input rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring min-h-[100px]"
                       placeholder="What did you like or dislike?"
                       value={reviewComment}
@@ -323,7 +346,11 @@ export default function ProductDetail() {
                       required
                     ></textarea>
                   </div>
-                  <Button type="submit" className="w-full" disabled={isSubmittingReview}>
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={isSubmittingReview}
+                  >
                     {isSubmittingReview ? "Submitting..." : "Submit Review"}
                   </Button>
                 </form>
@@ -345,9 +372,12 @@ export default function ProductDetail() {
                           {review.user_id.substring(0, 2).toUpperCase()}
                         </div>
                         <div>
-                          <div className="font-semibold text-sm">User {review.user_id.substring(0, 5)}</div>
+                          <div className="font-semibold text-sm">
+                            User {review.user_id.substring(0, 5)}
+                          </div>
                           <div className="text-xs text-muted-foreground">
-                            Verified Purchase • {new Date(review.created_at).toLocaleDateString()}
+                            Verified Purchase •{" "}
+                            {new Date(review.created_at).toLocaleDateString()}
                           </div>
                         </div>
                       </div>

@@ -1,26 +1,38 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { ShoppingBag, ArrowRight, ShieldCheck } from 'lucide-react';
-import { useAppSelector } from '@/hooks/hooks';
-import { CartItemCard } from '@/components/CartItemCard';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Separator } from '@/components/ui/separator';
-import { useFetchCartProducts } from '@/api/cartApi';
-import { CartPageSkeleton } from '@/components/skeleton/CartPageSkeleton';
+import React from "react";
+import { Link } from "react-router-dom";
+import { ShoppingBag, ArrowRight, ShieldCheck } from "lucide-react";
+import { useAppSelector } from "@/hooks/hooks";
+import { CartItemCard } from "@/components/CartItemCard";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { useFetchCartProducts } from "@/api/cartApi";
+import { CartPageSkeleton } from "@/components/skeleton/CartPageSkeleton";
 
 export default function Cart() {
-  const { items } = useAppSelector(state => state.cart);
-  const { user } = useAppSelector(state => state.auth);
+  const { items } = useAppSelector((state) => state.cart);
+  const { user } = useAppSelector((state) => state.auth);
   const { isLoading } = useFetchCartProducts(!!user);
-  
+
   if (isLoading) {
     return <CartPageSkeleton />;
   }
-  
-  const subtotal = items.reduce((total, item) => total + (Number(item.product.sales_price || item.product.price || 0) * item.quantity), 0);
-  const shipping = subtotal > 100 ? 0 : 15.00;
+
+  const subtotal = items.reduce(
+    (total, item) =>
+      total +
+      Number(item.product.sales_price || item.product.price || 0) *
+        item.quantity,
+    0,
+  );
+  const shipping = subtotal > 100 ? 0 : 15.0;
   const tax = subtotal * 0.08; // 8% tax
   const total = subtotal + shipping + tax;
 
@@ -32,7 +44,8 @@ export default function Cart() {
         </div>
         <h1 className="text-3xl font-bold mb-4">Your cart is empty</h1>
         <p className="text-muted-foreground mb-8 max-w-md">
-          Looks like you haven't added anything to your cart yet. Discover our premium products and find what you love.
+          Looks like you haven't added anything to your cart yet. Discover our
+          premium products and find what you love.
         </p>
         <Button size="lg" asChild className="rounded-full px-8">
           <Link to="/products">Start Shopping</Link>
@@ -44,7 +57,7 @@ export default function Cart() {
   return (
     <div className="container mx-auto px-4 md:px-10 py-8">
       <h1 className="text-3xl font-bold tracking-tight mb-8">Shopping Cart</h1>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Cart Items List */}
         <div className="lg:col-span-2">
@@ -53,7 +66,7 @@ export default function Cart() {
               <CardTitle className="text-lg">Items ({items.length})</CardTitle>
             </CardHeader>
             <CardContent className="p-4 sm:p-6 divide-y divide-border">
-              {items.map(item => (
+              {items.map((item) => (
                 <CartItemCard key={item.id} item={item} />
               ))}
             </CardContent>
@@ -69,26 +82,46 @@ export default function Cart() {
             <CardContent className="p-6 space-y-4">
               <div className="flex justify-between text-muted-foreground">
                 <span>Subtotal</span>
-                <span>${subtotal.toFixed(2)}</span>
+                <span>
+                  {Number(subtotal).toLocaleString("en-IN", {
+                    style: "currency",
+                    currency: "INR",
+                  })}
+                </span>
               </div>
               <div className="flex justify-between text-muted-foreground">
                 <span>Estimated Tax (8%)</span>
-                <span>${tax.toFixed(2)}</span>
+                <span>
+                  {Number(tax).toLocaleString("en-IN", {
+                    style: "currency",
+                    currency: "INR",
+                  })}
+                </span>
               </div>
               <div className="flex justify-between text-muted-foreground">
                 <span>Shipping</span>
                 {shipping === 0 ? (
                   <span className="text-emerald-500 font-medium">Free</span>
                 ) : (
-                  <span>${shipping.toFixed(2)}</span>
+                  <span>
+                    {Number(shipping).toLocaleString("en-IN", {
+                      style: "currency",
+                      currency: "INR",
+                    })}
+                  </span>
                 )}
               </div>
-              
+
               <Separator />
-              
+
               <div className="flex justify-between font-bold text-lg">
                 <span>Total</span>
-                <span>${total.toFixed(2)}</span>
+                <span>
+                  {Number(total).toLocaleString("en-IN", {
+                    style: "currency",
+                    currency: "INR",
+                  })}
+                </span>
               </div>
 
               <div className="pt-4 pb-2">

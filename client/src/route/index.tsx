@@ -22,6 +22,7 @@ import Dashboard from "@/page/admin/Dashboard";
 import AdminProducts from "@/page/admin/AdminProducts";
 import AdminOrders from "@/page/admin/AdminOrders";
 import AdminUsers from "@/page/admin/AdminUsers";
+import AdminRag from "@/page/admin/AdminRag";
 import ErrorElement from "@/components/ErrorElement";
 
 import Profile from "@/page/Profile";
@@ -111,6 +112,10 @@ export const router = createBrowserRouter([
                     {
                         path: "users",
                         element: <AdminUsers />
+                    },
+                    {
+                        path: "rag",
+                        element: <AdminRag />
                     }
                 ]
             },

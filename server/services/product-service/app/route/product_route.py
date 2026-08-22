@@ -173,11 +173,11 @@ async def sync_all_products_for_rag(
     db: Session = Depends(get_db),
     current_user: TokenData = Depends(get_current_user)
 ):
-    if current_user.role != "ADMIN":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
+    # if current_user.role != "ADMIN":
+    #     raise HTTPException(
+    #         status_code=status.HTTP_403_FORBIDDEN,
+    #         detail="Admin access required"
+    #     )
 
     cache_rag_data = get_redis().get(RAG_SYNC_CACHE_KEY)
     if cache_rag_data:

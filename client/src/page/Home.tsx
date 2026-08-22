@@ -1,6 +1,6 @@
 import React, { lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Zap, Shield, Truck } from 'lucide-react';
+import { ArrowRight, Zap, Shield, Truck, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { dummyProducts, dummyCategories } from '@/lib/data';
 const ProductCard = lazy(() => import("@/components/ProductCard"));  
@@ -9,6 +9,7 @@ const CategoryCard = lazy(() => import('@/components/CategoryCard'));
 import { ProductCardSkeleton } from '@/components/skeleton/ProductCardSkeleton';
 import { CategoryCardSkeleton } from '@/components/skeleton/CategoryCardSkeleton';
 import { useGetFeaturedProducts } from '@/api/productApi';
+import { AiChatSection } from '@/components/AiChatSection';
 
 export default function Home() {
   const trendingProducts = dummyProducts.filter(p => p.badge === 'Trending').slice(0, 4);
@@ -104,14 +105,33 @@ export default function Home() {
           
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
             {dummyCategories.map(category => (
-              <Suspense fallback={ <CategoryCardSkeleton /> }>
-                <CategoryCard key={category.id} category={category} />
+              <Suspense key={category.id} fallback={<CategoryCardSkeleton />}>
+                <CategoryCard category={category} />
               </Suspense>
             ))}
           </div>
           <Button variant="outline" asChild className="w-full mt-8 sm:hidden">
             <Link to="/category/all">View All Categories</Link>
           </Button>
+        </div>
+      </section>
+
+      {/* AI Assistant Chat Section */}
+      <section className="py-16 bg-slate-100 dark:bg-card/50 border-y border-border flex justify-center items-center">
+        <div className="container px-4 md:px-10">
+          <div className="text-center max-w-2xl mx-auto mb-8">
+            <span className="inline-flex items-center gap-1.5 py-1 px-3.5 rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-400 font-semibold text-xs mb-3 border border-violet-500/20">
+              <Sparkles className="h-3.5 w-3.5" /> AI Product Assistant
+            </span>
+            <h2 className="text-3xl md:text-4xl font-bold mb-3">Ask Groq AI for Recommendations</h2>
+            <p className="text-muted-foreground text-sm md:text-base">
+              Need help choosing? Ask questions like "Suggest a mobile under 10000" or "Best gaming phones" to get instant RAG-backed product recommendations!
+            </p>
+          </div>
+
+          <div className="max-w-4xl mx-auto">
+            <AiChatSection />
+          </div>
         </div>
       </section>
 
@@ -187,8 +207,8 @@ export default function Home() {
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 xl:gap-8">
             {trendingProducts.map(product => (
-              <Suspense fallback={ <ProductCardSkeleton /> }>
-                <ProductCard key={product.id} product={product} />
+              <Suspense key={product.id} fallback={ <ProductCardSkeleton /> }>
+                <ProductCard product={product} />
               </Suspense>
             ))}
           </div>

@@ -7,6 +7,7 @@ import {
   Users,
   LogOut,
   Settings,
+  Sparkles,
 } from "lucide-react";
 import {
   Sidebar,
@@ -31,6 +32,7 @@ const items = [
   { title: "Products", url: "/admin/products", icon: Package },
   { title: "Orders", url: "/admin/orders", icon: ShoppingCart },
   { title: "Users", url: "/admin/users", icon: Users },
+  { title: "RAG & AI", url: "/admin/rag", icon: Sparkles },
 ];
 
 export function AdminLayout() {

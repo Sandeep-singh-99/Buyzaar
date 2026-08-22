@@ -2,7 +2,7 @@
 
 Buyzaar is an enterprise-grade, high-performance, and highly scalable **distributed microservices e-commerce platform**. The project is designed with a strict **database-per-service** model to ensure complete decoupling, scalability, and independent deployment cycles. 
 
-The platform utilizes an **Nginx API Gateway** as a single entry point for routing, **Redis** for distributed high-speed caching (Cache-Aside pattern), and **Neon Serverless PostgreSQL** for database persistence across all services. The client-side is a feature-rich, modern Single Page Application (SPA) built using React 19, Vite, Tailwind CSS v4, and Shadcn UI.
+The platform utilizes an **Nginx API Gateway** as a single entry point for routing, **Redis** for distributed high-speed caching (Cache-Aside pattern), and **Neon Serverless PostgreSQL (with pgvector extension)** for database persistence and RAG vector embeddings across all services. The client-side is a feature-rich, modern Single Page Application (SPA) built using React 19, Vite, Tailwind CSS v4, and Shadcn UI.
 
 ![E-Commerce Microservices](./screenshot/image.png)
 ![E-Commerce Microservices](./screenshot/Screenshot%202026-07-26%20142319.png)
@@ -13,17 +13,18 @@ The platform utilizes an **Nginx API Gateway** as a single entry point for routi
 1. [🏗️ System Design & Architecture](#️-system-design--architecture)
 2. [🔄 End-to-End System Workflow](#-end-to-end-system-workflow)
 3. [⚡ Features](#-features)
-4. [🛠️ Technology Stack](#️-technology-stack)
-5. [📁 Project Directory Structure](#-project-directory-structure)
-6. [🧩 Service Breakdown & Detail](#-service-breakdown--detail)
-7. [🛡️ JWT Authentication & Authorization Flow](#️-jwt-authentication--authorization-flow)
-8. [🚀 Getting Started](#-getting-started)
+4. [🤖 AI Recommendation Service & RAG Architecture](#-ai-recommendation-service--rag-architecture)
+5. [🛠️ Technology Stack](#️-technology-stack)
+6. [📁 Project Directory Structure](#-project-directory-structure)
+7. [🧩 Service Breakdown & Detail](#-service-breakdown--detail)
+8. [🛡️ JWT Authentication & Authorization Flow](#️-jwt-authentication--authorization-flow)
+9. [🚀 Getting Started](#-getting-started)
 
 ---
 
 ## 🏗️ System Design & Architecture
 
-Buyzaar implements a modern microservices architecture designed to decouple domain boundaries and scale services independently. Communication between services occurs securely over the internal network using lightweight, asynchronous HTTP REST clients.
+Buyzaar implements a modern microservices architecture designed to decouple domain boundaries and scale services independently. Communication between services occurs securely over the internal network using lightweight, asynchronous HTTP REST clients and Inngest event-driven pipelines.
 
 ```mermaid
 graph TD
@@ -37,7 +38,7 @@ graph TD
     ReviewService["Review Service (FastAPI:8000)"]
     OrderService["Order Service (FastAPI:8000)"]
     PaymentService["Payment Service (FastAPI:5000)"]
-    RecommendationService["Recommendation Service (FastAPI:8000)"]
+    RecommendationService["Recommendation Service (FastAPI:8003)"]
     
     %% Databases & Storage
     UserDB[(Neon PostgreSQL - User DB)]
@@ -46,11 +47,14 @@ graph TD
     ReviewDB[(Neon PostgreSQL - Review DB)]
     OrderDB[(Neon PostgreSQL - Order DB)]
     PaymentDB[(Neon PostgreSQL - Payment DB)]
+    RecommendationDB[(PostgreSQL + pgvector - Vector DB)]
     RedisCache[(Redis Caching)]
     
-    %% Third-party
+    %% Third-party & Event Drivers
     Cloudinary["Cloudinary (Image Storage)"]
     Cashfree["Cashfree Payment Gateway"]
+    Groq["Groq LLM (llama-3.1-8b-instant)"]
+    Inngest["Inngest Event Bus"]
 
     %% Flow/Connections
     Client <-->|HTTP/REST / Cookies| Gateway
@@ -61,7 +65,7 @@ graph TD
     Gateway -->|/review/*| ReviewService
     Gateway -->|/orders/*| OrderService
     Gateway -->|/payments/* & /webhook/cashfree| PaymentService
-    Gateway -->|/api/recommendations/*| RecommendationService
+    Gateway -->|/api/rag/* & /api/chat| RecommendationService
 
     %% Database connections
     UserService <--> UserDB
@@ -70,11 +74,18 @@ graph TD
     ReviewService <--> ReviewDB
     OrderService <--> OrderDB
     PaymentService <--> PaymentDB
+    RecommendationService <--> RecommendationDB
+    
+    %% AI & Embedding integrations
+    RecommendationService <-->|RAG Vector Search| Groq
+    ProductService -.->|Publish Event: product.created/updated/deleted| Inngest
+    Inngest -.->|Trigger Real-time RAG Vector Sync| RecommendationService
     
     %% Redis & Caching
     ProductService <-->|Read/Write Catalog Cache| RedisCache
     CartService <-->|Read/Write Cart Cache| RedisCache
     ReviewService <-->|Read/Write Review Cache| RedisCache
+    RecommendationService <-->|Cache RAG Queries| RedisCache
     
     %% Cloudinary connections
     UserService -->|Upload Avatars| Cloudinary
@@ -90,13 +101,14 @@ graph TD
     OrderService -.->|Validate Prices & Stock| ProductService
     OrderService -.->|Create Payment Session| PaymentService
     CartService -.->|Fetch Product Metadata| ProductService
+    RecommendationService -.->|Fetch Product Details| ProductService
 ```
 
 ### Architectural Key Concepts
 1. **API Gateway Pattern**: An Nginx Gateway routes external client traffic to respective services based on path rules. It provides a single IP access point, handles CORS preflight challenges, aggregates paths, and handles SSL/TLS termination.
-2. **Database-Per-Service**: To prevent tight coupling, each microservice has its own isolated schema and PostgreSQL database hosted on **Neon Serverless Postgres**. No service ever accesses another service's database directly.
-3. **Distributed Caching**: A Redis cache is utilized to speed up catalog queries (Product details, Featured listings), active shopping carts, and reviews. High-frequency read operations bypass Neon DB, saving costs and providing sub-millisecond response times.
-4. **Decoupled Integrations**: Image processing (Cloudinary) and Payment settlement (Cashfree) are completely encapsulated inside dedicated service components.
+2. **Database-Per-Service**: To prevent tight coupling, each microservice has its own isolated schema and PostgreSQL database hosted on **Neon Serverless Postgres**. The Recommendation Service uses **PostgreSQL + pgvector** for high-dimensional vector similarity indexing.
+3. **Distributed Caching**: A Redis cache is utilized to speed up catalog queries, RAG similarity search results, active shopping carts, and reviews.
+4. **Event-Driven RAG Synchronization**: Product Service publishes `product.created`, `product.updated`, and `product.deleted` events to **Inngest**. The Recommendation Service consumes these events asynchronously to update its vector embeddings in real time without blocking main CRUD flows.
 
 ---
 
@@ -165,7 +177,11 @@ sequenceDiagram
 ## ⚡ Features
 
 ### 🛒 Client & Storefront Features
-* **Dynamic Catalog & Search**: Advanced product browsing, filtering by categories, and real-time availability checks.
+* **🤖 Groq AI Shopping Assistant**: Integrated on the Homepage (`/`), allowing users to ask natural language product questions (e.g. *"suggest a mobile under 10000"* or *"best laptops for gaming"*).
+* **🎯 Interactive RAG Product Recommendations**: Generates natural language responses alongside structured product cards displaying primary images, prices, brands, and category badges.
+* **🔗 Direct Product Navigation**: Clicking any recommended product card in the AI chat instantly navigates to the Product Detail page (`/products/:id`).
+* **⚠️ Out-of-Catalog Warning Notifications**: Automatically detects non-product or out-of-catalog questions and renders a warning banner (`⚠️ Out of Catalog Scope`).
+* **Dynamic Catalog & Search**: Advanced product browsing, category filtering, and real-time availability checks.
 * **Smart Shopping Cart**: Seamless cart additions, quantity modification checks, total item count calculation, and stock boundary checks.
 * **Secure Payment & Checkout**: Seamless integration with **Cashfree Payment Gateway** supporting sandbox credit cards, simulated UPI, NetBanking, and instant transaction responses.
 * **Detailed Ratings & Reviews**: User feedback with visual star ratings, average score calculation, and review history per product.
@@ -174,9 +190,42 @@ sequenceDiagram
 
 ### 🛡️ Administrative Controls
 * **Admin Dashboard**: Comprehensive operations console including:
+  * **🤖 RAG & AI Vector Dashboard (`/admin/rag`)**: Admin console to monitor vector embedding counts, inspect cosine similarity distances, and trigger full database RAG synchronization with batched vectorization.
   * **Product Management**: Create, read, update, and delete products (Full CRUD) with Cloudinary file uploads.
   * **Order Tracking**: Comprehensive view of created orders, customer details, and payment states.
   * **User Management**: Inspect registered user accounts, avatars, and user roles.
+
+---
+
+## 🤖 AI Recommendation Service & RAG Architecture
+
+Buyzaar features a dedicated **Recommendation Microservice** built with **FastAPI**, **PostgreSQL + pgvector**, **LangChain**, **HuggingFace Embeddings**, **Inngest**, and **Groq LLM**.
+
+```
+┌─────────────────┐ 1. Ask question e.g. "Suggest mobile under 10000" ┌─────────────────────┐
+│ Customer Client │ ────────────────────────────────────────────────> │ Nginx API Gateway   │
+└─────────────────┘                                                   └─────────────────────┘
+                                                                                 │
+                                                                                 ▼
+┌───────────────────────┐  2. Convert query to 384D vector (HuggingFace)  ┌─────────────────────┐
+│ PostgreSQL + pgvector │ <────────────────────────────────────────── │ Recommendation Service
+└───────────────────────┘                                             └─────────────────────┘
+            │                                                                    │
+            │ 3. Returns nearest cosine distance products                        │ 4. Filters price <= ₹10,000
+            └────────────────────────────────────────────────────────────────────┘
+                                                                                 │
+                                                                                 ▼
+┌─────────────────────┐   6. Returns Grounded Answer + Product Cards  ┌─────────────────────┐
+│ Customer Client     │ <──────────────────────────────────────────── │ Groq LLM Generation │
+└─────────────────────┘                                               └─────────────────────┘
+```
+
+### Key RAG Features:
+1. **384-Dimensional HuggingFace Vector Embeddings**: Uses `sentence-transformers/all-MiniLM-L6-v2` to convert product titles, descriptions, categories, brands, and specifications into dense vector representations stored in PostgreSQL `product_embeddings`.
+2. **Fast Vectorized Batch Sync**: Admin sync triggers `upsert_product_embeddings_batch()`, processing batch vectorization across all products in ~1-2 seconds.
+3. **Budget & Constraint Filter Engine**: Extracted price limits (e.g., *"under 10000"*, *"below 50000"*) dynamically filter retrieved vector candidates so Groq AI strictly recommends products within the requested budget.
+4. **Groq Model Fallback Cascade**: High-speed inference using `llama-3.1-8b-instant` with automatic fallback to `llama-3.3-70b-versatile` and `gemma2-9b-it`.
+5. **Real-time Inngest Event Sync**: Automatically updates or deletes product vector embeddings when products are modified in the Product Service.
 
 ---
 
@@ -188,8 +237,10 @@ sequenceDiagram
 | **UI Styling** | Tailwind CSS v4, Shadcn UI, Radix UI, Lucide Icons | Premium aesthetic layout, dark-mode toggle, responsive grids, and custom animations. |
 | **API Gateway** | Nginx | Reverse proxy, CORS controller, security headers, routing endpoint mapping. |
 | **Backend Services** | Python, FastAPI, SQLAlchemy, Alembic, Uvicorn | Asynchronous endpoint development, migrations, and automatic OpenAPI schema generation. |
+| **AI & Vector DB** | PostgreSQL + pgvector, LangChain, HuggingFace (`all-MiniLM-L6-v2`), Groq LLM | Dense vector similarity indexing, budget filtering, and RAG product recommendation chat. |
+| **Event Bus** | Inngest | Event-driven architecture for real-time vector embedding updates across microservices. |
 | **Data Storage** | Neon Serverless PostgreSQL | Relational transactional storage optimized for cloud scale. |
-| **Caching & Session** | Redis | Key-value store for product listings caching and query speedups. |
+| **Caching & Session** | Redis | Key-value store for product listings caching, RAG query caching, and cart speedups. |
 | **Image Hosting** | Cloudinary | Asset distribution, profile avatars, and product catalog image processing. |
 | **Payments** | Cashfree Sandbox SDK | E-Commerce payment session generation, webhook handling, and cryptographic verification. |
 | **Orchestration** | Docker, Docker Compose | Service containerization and local infrastructure replication. |
@@ -206,7 +257,11 @@ ecommerce-microservices/
 ├── client/                         # Vite + React + TypeScript Frontend
 │   ├── Dockerfile                  # Container instructions for client development server
 │   ├── package.json                # Frontend dependencies & packages
-│   ├── src/                        # Component assets, page routers, and Redux code
+│   ├── src/
+│   │   ├── api/                    # Axios & TanStack query hooks (productApi, ragApi)
+│   │   ├── components/             # Reusable UI & AiChatSection components
+│   │   ├── page/                   # Storefront pages & Admin RAG console (/admin/rag)
+│   │   └── route/                  # React Router routes definition
 │   └── tailwind.config.js          # Styling configurations
 └── server/                         # Backend Services and Proxy
     ├── .env                        # Microservice configuration secrets (Neon DBs, Keys)
@@ -223,7 +278,7 @@ ecommerce-microservices/
         ├── cart-service/           # Active cart memory maps and Redis cache
         ├── order-service/          # Pricing validation, order creation logic
         ├── payment-service/        # Cashfree sessions, signature check, webhooks
-        └── recommendation-service/ # Recommendation API (scaffold)
+        └── recommendation-service/ # FastAPI + pgvector + Groq AI + RAG recommendation engine
 ```
 
 ---
@@ -240,7 +295,7 @@ ecommerce-microservices/
   - `/review/*` ➔ `review-service:8000` (Creating, editing, retrieving product reviews)
   - `/orders/*` ➔ `order-service:8000` (Order placement, callback, tracking)
   - `/payments/*` & `/webhook/cashfree` ➔ `payment-service:5000` (Checkout initialization and webhook)
-  - `/api/recommendations/*` ➔ `recommendation-service:8000` (Scaffold)
+  - `/api/rag/*` & `/api/chat` ➔ `recommendation-service:8000` (Vector search, batch sync, Groq AI chat)
 
 ### 2. User Service
 * **Port**: `8000` (Internal)
@@ -251,19 +306,19 @@ ecommerce-microservices/
 * **Port**: `8000` (Internal)
 * **Database**: Neon Postgres (`DATABASE_URL_PRODUCT_SERVICE`)
 * **Caching**: Redis
-* **Role**: Handles the product catalog, categorizations, inventories, and images. Uses Redis caching for featured lists and individual product lookups. Automatically invalidates caches upon creation/modification/deletion.
+* **Role**: Handles the product catalog, categorizations, inventories, and images. Uses Redis caching for featured listings. Publishes Inngest events (`product.created`, `product.updated`, `product.deleted`) to synchronize RAG embeddings automatically.
 
 ### 4. Cart Service
 * **Port**: `8000` (Internal)
 * **Database**: Neon Postgres (`DATABASE_URL_CART_SERVICE`)
 * **Caching**: Redis
-* **Role**: Manages active user baskets. Caches cart data (`cart:{user_id}`) in Redis for quick access. Communicates with Product Service via HTTP to merge real-time product prices and metadata before presenting the cart to the user.
+* **Role**: Manages active user baskets. Caches cart data (`cart:{user_id}`) in Redis for quick access. Communicates with Product Service via HTTP to merge real-time product prices and metadata.
 
 ### 5. Review Service
 * **Port**: `8000` (Internal)
 * **Database**: Neon Postgres (`DATABASE_URL_REVIEW_SERVICE`)
 * **Caching**: Redis
-* **Role**: Handles comments and rating submissions. Computes average star scores and breakdown counts. Clears review lists cache (`reviews:{product_id}:*`) and rating cache (`rating:{product_id}`) on database updates.
+* **Role**: Handles comments and rating submissions. Computes average star scores and breakdown counts. Clears review lists cache (`reviews:{product_id}:*`) and rating cache on updates.
 
 ### 6. Order Service
 * **Port**: `8000` (Internal)
@@ -273,12 +328,12 @@ ecommerce-microservices/
 ### 7. Payment Service
 * **Port**: `5000` (Internal)
 * **Database**: Neon Postgres (`DATABASE_URL_PAYMENT_SERVICE`)
-* **Role**: Handles Cashfree integration. Initiates sessions, captures payment histories, receives Cashfree webhook notifications, cryptographically verifies signatures using SHA256, notifies Order Service of successes/failures, and triggers Cart Service to empty purchased carts.
+* **Role**: Handles Cashfree integration. Initiates sessions, captures payment histories, receives Cashfree webhook notifications, cryptographically verifies signatures using SHA256, notifies Order Service, and triggers Cart Service to empty purchased carts.
 
 ### 8. Recommendation Service
 * **Port**: `8000` (Internal)
-* **Database**: Neon Postgres (`DATABASE_URL_RECOMMENDATION_SERVICE`)
-* **Role**: Scaffold API ready for personalization/recommendation integrations.
+* **Database**: PostgreSQL + pgvector extension (`DATABASE_URL_RECOMMENDATION_SERVICE`)
+* **Role**: Provides vector similarity search, Groq AI LLM product recommendation chat, budget constraint filtering, and Inngest background event processing.
 
 ---
 
@@ -289,23 +344,17 @@ Buyzaar implements stateless token-based authorization via secure cookies.
 ```
 [ Client ] --(1. Login/Register Form)--> [ Gateway ] --> [ User Service ]
 [ Client ] <--(2. Sets Secure HttpOnly Cookie)-- [ Gateway ] <-- (JWT Token Created)
-
-[ Client ] --(3. Subsequent Request: cart/order)--> [ Gateway ] --> [ Other Services ]
-                                                                          |
-                                                                  (Shared Dependency decodes
-                                                                   JWT and extracts Identity)
 ```
 
 1. **Token Generation**: Upon successful login or registration, the **User Service** issues a JSON Web Token (JWT) containing the user's `email`, `role`, and `id` (as `sub` and payload keys).
 2. **Secure Transport**: The token is returned in the response header setting a cookie named `access_token`. 
    - Cookie Parameters: `httponly=True`, `secure=True`, `samesite="none"`, `max_age=15 days`.
-   - Security: Being `HttpOnly`, Javascript code running on the client cannot read the token, neutralizing Cross-Site Scripting (XSS) extraction attacks.
 3. **Shared Authentication**: Protected backend endpoints do not need to query the User Service or its database to authenticate requests. Instead, they use a **Shared Dependency** (`server/shared/dependencies.py`):
    - Reads the cookie `access_token` (or fallback header `Authorization: Bearer <token>`).
    - Decodes the token using the shared `JWT_SECRET_KEY` via `jose` library.
    - Extracts identity schema (`TokenData` containing `email`, `role`, `user_id`).
-   - Rejects with `HTTP 401 Unauthorized` if the token is invalid, malformed, or expired.
-4. **Role-Based Authorization**: Endpoints utilize `TokenData.role` to restrict administrator actions. For example, only `ADMIN` roles are permitted to access `POST`, `PUT`, or `DELETE` routes on the Product Service.
+   - Rejects with `HTTP 401 Unauthorized` if the token is invalid or expired.
+4. **Role-Based Authorization**: Endpoints utilize `TokenData.role` to restrict administrator actions. For example, only `ADMIN` roles are permitted to trigger full RAG synchronization or manage inventory.
 
 ---
 
@@ -328,6 +377,7 @@ docker-compose up -d --build
 #### Access Endpoints
 * **Frontend Web App**: [http://localhost:5173](http://localhost:5173)
 * **API Gateway Entry**: [http://localhost](http://localhost)
+* **Admin RAG Console**: [http://localhost:5173/admin/rag](http://localhost:5173/admin/rag)
 * **Interactive API Docs (Swagger OpenAPI)**:
   - User Service Docs: `http://localhost/auth/docs`
   - Product Service Docs: `http://localhost/api/products/docs`
@@ -335,6 +385,7 @@ docker-compose up -d --build
   - Order Service Docs: `http://localhost/orders/docs`
   - Payment Service Docs: `http://localhost/payments/docs`
   - Review Service Docs: `http://localhost/review/docs`
+  - Recommendation Service Docs: `http://localhost/api/recommendation/docs`
 
 ---
 
@@ -355,6 +406,10 @@ DATABASE_URL_ORDER_SERVICE="postgresql://..."
 DATABASE_URL_PAYMENT_SERVICE="postgresql://..."
 DATABASE_URL_RECOMMENDATION_SERVICE="postgresql://..."
 
+# Groq AI & RAG Configuration
+GROQ_API_KEY="your_groq_api_key"
+GROQ_MODEL="llama-3.1-8b-instant"
+
 # Security Secret
 JWT_SECRET_KEY="your_secure_random_hash_key"
 
@@ -370,6 +425,7 @@ CART_SERVICE_URL=http://localhost:8002
 REVIEW_SERVICE_URL=http://localhost:8003
 ORDER_SERVICE_URL=http://localhost:8004
 PAYMENT_SERVICE_URL=http://localhost:5000
+RECOMMENDATION_SERVICE_URL=http://localhost:8003
 
 # Cashfree Integrations
 CASHFREE_APP_ID="your_cashfree_sandbox_app_id"
@@ -378,30 +434,19 @@ CASHFREE_BASE_URL="https://sandbox.cashfree.com/pg"
 CASHFREE_API_VERSION="2023-08-01"
 ```
 
-#### 2. Run Backend Services (Example: Product Service)
-Create a Python virtual environment and run Uvicorn:
-
+#### 2. Run Recommendation Microservice
 ```bash
-# Navigate to service directory
-cd server/services/product-service
-
-# Create and activate virtual environment
+cd server/services/recommendation-service
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
-
-# Install requirements
 pip install -r requirements.txt
-
-# Run server with live reload
-uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
+uvicorn app.main:app --host 0.0.0.0 --port 8003 --reload
 ```
 
-#### 3. Run Database Migrations (e.g. Payment Service)
-Certain services require applying migrations locally:
-
+#### 3. Run Database Migrations
 ```bash
-cd server/services/payment-service
-source .venv/bin/activate  # Active virtual env with dependencies
+cd server/services/recommendation-service
+source .venv/bin/activate
 alembic upgrade head
 ```
 

@@ -13,7 +13,7 @@ dotenv.load_dotenv()
 
 
 from app.core.db import Base
-from app.model.product_embeddings import ProductEmbedding
+from app.models.product_embedding import ProductEmbedding
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

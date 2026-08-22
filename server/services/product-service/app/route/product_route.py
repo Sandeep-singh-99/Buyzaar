@@ -10,7 +10,8 @@ from shared.cloudinary import delete_image, upload_multiple_images
 from shared.dependencies import get_current_user, TokenData
 from fastapi.encoders import jsonable_encoder
 from shared.redis.client import get_redis
-from shared.config import CACHE_TTL_SHORT, CACHE_TTL_LONG
+from shared.config import CACHE_TTL_SHORT, CACHE_TTL_LONG, CACHE_TTL_RAG, RAG_SYNC_CACHE_KEY
+from app.core.inngest import inngest_client
 import json
 import asyncio
 from typing import List
@@ -81,8 +82,18 @@ async def create_product(
         db.commit()
         db.refresh(new_product)
 
+        await inngest_client.send(
+            {
+                "name": "product.created",
+                "data": {
+                    "product_id": str(new_product.id)
+                }
+            }
+        )
+
         # Clear generic caches that might be affected by a new product
         get_redis().delete("featured_products")
+        get_redis().delete(RAG_SYNC_CACHE_KEY)
 
         return {
             "message": "Product created successfully",
@@ -151,6 +162,71 @@ def get_products(
     
     # Save to Cache
     get_redis().setex(cache_key, CACHE_TTL_SHORT, json.dumps(jsonable_encoder(response_data)))
+    return response_data
+
+@router.get(
+    "/rag/sync-all",
+    description="Fetch all products for RAG embedding synchronization."
+)
+async def sync_all_products_for_rag(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    if current_user.role != "ADMIN":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+
+    cache_rag_data = get_redis().get(RAG_SYNC_CACHE_KEY)
+    if cache_rag_data:
+        return json.loads(cache_rag_data)
+
+    products = (
+        db.query(Product)
+        .options(selectinload(Product.images))
+        .all()
+    )
+
+    result = []
+
+    for product in products:
+        primary_image = next(
+            (image for image in product.images if image.is_primary),
+            None
+        )
+
+        result.append({
+            "id": product.id,
+            "name": product.product_name,
+            "brand": product.product_brand,
+            "price": product.product_price,
+            "sales_price": product.sales_price,
+            "category": product.product_category,
+            "description": product.product_description,
+            "details": product.product_details,
+            "primary_image": (
+                {
+                    "url": primary_image.image_url,
+                    "public_id": primary_image.public_id
+                }
+                if primary_image else None
+            ),
+            "created_at": product.created_at,
+        })
+
+    response_data = {
+        "total": len(result),
+        "products": result
+    }
+
+    get_redis().setex(
+        RAG_SYNC_CACHE_KEY,
+        CACHE_TTL_RAG,
+        json.dumps(jsonable_encoder(response_data))
+    )
+
     return response_data
 
 
@@ -238,6 +314,15 @@ async def update_product(
     db.commit()
     db.refresh(product)
 
+    await inngest_client.send(
+        {
+            "name": "product.updated",
+            "data": {
+                "product_id": str(product.id)
+            }
+        }
+    )
+
     response_data = {
         "id": product.id,
         "name": product.product_name,
@@ -254,6 +339,7 @@ async def update_product(
     # Invalidate Cache and set new data
     get_redis().setex(f"product_details:{product_id}", CACHE_TTL_LONG, json.dumps(jsonable_encoder(response_data)))
     get_redis().delete("featured_products")
+    get_redis().delete(RAG_SYNC_CACHE_KEY)
 
     return response_data
 
@@ -507,11 +593,23 @@ async def delete_product(product_id: str, db: Session = Depends(get_db), current
     delete_tasks = [run_in_threadpool(delete_image, img.public_id) for img in product.images]
     await asyncio.gather(*delete_tasks, return_exceptions=True)
 
+    product_id_value = str(product.id)
+
     db.delete(product)
     db.commit()
+
+    await inngest_client.send(
+        {
+            "name": "product.deleted",
+            "data": {
+                "product_id": product_id_value
+            }
+        }
+    )
 
     # Invalidate Cache
     get_redis().delete(f"product_details:{product_id}")
     get_redis().delete("featured_products")
+    get_redis().delete(RAG_SYNC_CACHE_KEY)
 
     return {"message": "Product deleted successfully"}
